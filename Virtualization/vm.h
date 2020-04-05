@@ -1,5 +1,4 @@
-#ifndef _vm_h_
-#define _vm_h_
+#pragma once
 
 #include <stdio.h>
 #include <io.h>
@@ -21,10 +20,15 @@
 
 #define FLAGS	10
 
+//------------
+#define REG_TYPE		(BYTE)1
+#define CONST_TYPE		(BYTE)2
+
 //----------------------
 typedef unsigned int	uint32_t;
-typedef uint32_t		DWORD;
-typedef unsigned char	BYTE;
+typedef int		DWORD;
+typedef char	BYTE;
+typedef BYTE	op_type;
 
 //----------------------
 typedef struct _VM_ {
@@ -35,12 +39,20 @@ typedef struct _VM_ {
 	uint32_t REG[11];
 
 
-} vm, *vm_ptr;
+} vm_, *vm_ptr;
+
+typedef struct _OP_ {
+	op_type type;
+	DWORD value;
+}OP;
 
 //----------------------
-void _vm_init_(vm_ptr vm_);
-	
+void _vm_init_(vm_ptr vm);
+DWORD _vm_destruct_(vm_ptr vm);
 
-#endif // _vm_h
+void _vm_mov_(vm_ptr vm, BYTE op1, OP op2);
+//DWORD _vm_add_(OP op1, OP op2);
+
+
 
 
