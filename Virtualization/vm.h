@@ -6,7 +6,37 @@
 #include <memory.h>
 
 //----------------------
+
+//----------------------
+typedef unsigned int	uint32_t;
+typedef int		DWORD;
+typedef char	BYTE;
+typedef BYTE	op_type;
+
+typedef struct _OP_ 
+{
+	op_type type;
+	DWORD value;
+} OP;
+
+typedef struct _operand_type_
+{
+	op_type op;
+} CURROPTYPE, *PCURROPTYPE;
+
+enum _types_
+{
+	reg_,
+	imm_,
+	comst_
+};
+
+//----------------------
 #define R0		1
+#define r0		\
+	define_operand(vm, reg_, R0))
+	
+
 #define R1		2
 #define R2		3
 #define	R3		4
@@ -17,18 +47,19 @@
 #define IP		8
 #define	SP		9
 #define	BP		10
-
-#define FLAGS	0
+																				// пока аналогично, но можно и больше(4 бита отведено (не больше 32 Кбайт)
+#define FLAGS	0		/*														|	DS   |size SS (0_0 - 128 byte, 0_1 - 256 bytes, 1_0 - 512 bytes, 1_1 - 1024 bytes)
+							_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ |_ _ _ _ | _ _
+																					   
+						*/
 
 //------------
 #define REG_TYPE		(BYTE)1
 #define CONST_TYPE		(BYTE)2
 
-//----------------------
-typedef unsigned int	uint32_t;
-typedef int		DWORD;
-typedef char	BYTE;
-typedef BYTE	op_type;
+#define FLAG_SIZE_SS		(vm->REG[FLAGS] & 0b11)
+#define FLAG_SIZE_DS		((vm->REG[FLAGS] & 0b111100) >> 2)
+
 
 //----------------------
 typedef struct _VM_ {
@@ -41,10 +72,6 @@ typedef struct _VM_ {
 
 } vm_, *vm_ptr;
 
-typedef struct _OP_ {
-	op_type type;
-	DWORD value;
-}OP;
 
 #define _MOV_OPCODE_		\
 	{ 0x00, 0x01, 0x01, 0x01 }, \
@@ -80,6 +107,9 @@ typedef struct _OP_ {
 static BYTE table[4][4] = OPCODE_TABLE;
 //----------------------
 static void _generate_opcode_table_();
+void _push_(vm_ptr vm, DWORD value);
+enum _types_ define_operand(vm_ptr vm, enum _types_ type, BYTE num_reg);
+
 
 void _vm_init_(vm_ptr vm);
 DWORD _vm_destruct_(vm_ptr vm);

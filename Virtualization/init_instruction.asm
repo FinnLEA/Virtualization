@@ -16,7 +16,7 @@ foo proc
 
 foo endp
 
-_init_ops_ proc op1:DWORD, op2:DWORD, vbp_reg:PTR DWORD
+_init_ops_ proc op1:DWORD, op2:ptr DWORD, vbp_reg:PTR DWORD
 
 	mov eax, [op1]
 	and eax, 0ff00h

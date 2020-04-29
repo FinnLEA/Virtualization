@@ -11,15 +11,32 @@ void _generate_opcode_table_()
 	
 }
 
+void _push_(vm_ptr vm, DWORD value)
+{
+	DWORD curr_addr = vm->REG[SP] + vm->SS;
+	if (curr_addr > vm->SS + 128) {
+		vm->REG[SP] = 0;
+	}
+	vm->SS[vm->REG[SP]] = value;
+	vm->REG[SP] += 4;
+}
+
+DWORD define_operand(vm_ptr vm, enum _types_ type)
+{
+	// _push_(vm, (DWORD)(((DWORD)type << 8) + num_reg));
+	_push_(vm, (DWORD)type);
+	return type;
+}
 
 void _vm_init_(vm_ptr vm)
 {
-	vm->DS = (uint32_t*)malloc(512);
-	vm->SS = (uint32_t*)malloc(128);
+	DWORD size = 1 << (FLAG_SIZE_SS + 7);
+	vm->DS = (uint32_t*)malloc(1 << (FLAG_SIZE_DS + 7));
+	vm->SS = (uint32_t*)malloc(1 << (FLAG_SIZE_SS + 7));
 	vm->CS = (uint32_t*)malloc(12);
 
 
-	for (int i = 0; i < 7; ++i)
+	for (int i = 1; i < 7; ++i)
 		vm->REG[i] = 0;
 
 	vm->REG[SP] = 0;
