@@ -1,5 +1,5 @@
 .686
-.model flat, stdcall
+.model flat, c
 
 .data
 
@@ -16,21 +16,13 @@ foo proc
 
 foo endp
 
-_init_ops_ proc op1:DWORD, op2:ptr DWORD, vbp_reg:PTR DWORD
-
+_init_ops_ proc op1:PTR DWORD, op2:PTR DWORD, vR9_reg:PTR DWORD
 	mov eax, [op1]
-	and eax, 0ff00h
-	.if eax != 0
-		mov ebx, [vbp_reg]
-		mov ebx, [ebx]
-		mov ebx, 03h
-		shl ebx, 24
-		mov ecx, [op1]
-		and ecx, 0ffffff00h
-		shr ecx, 8
-	.else 
-		
-	.endif
+	mov ecx, [vR9_reg]
+	mov cl, byte ptr [ecx]
+	mov byte ptr [eax], cl
+
+	ret
 _init_ops_ endp
 
 end

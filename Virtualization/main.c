@@ -56,9 +56,15 @@ int main() {
 	//	vm->REG[FLAGS] |= _256_;
 	//	_vm_init_(vm); 
 	//	PCURROPTYPE type = (PCURROPTYPE)malloc(sizeof(CURROPTYPE));
-	BEGIN_PROTECT(_1_KBYTE, 1025);
+	BEGIN_PROTECT(_1_KBYTE, _256_BYTE);
 	{
-		//VM_MOV(0x112233, R0);
+		DWORD res1;
+		_push_(vm, 2);
+		_pop_(vm, &res1);
+		//define_operand(vm, reg_, R0);
+		//_init_ops_(0x112233, define_operand(vm, reg_, R0), vm->REG[r9]);
+		VM_MOV(IMM(0x112233), r0);
+		
 		//_init_ops_(0x112233, r0, &vm->REG[BP]); \
 		//	vm->CS[_CURR_INSTRUCTION_] = table __MOV_REG_REG__; \
 		//	OP op2; \
@@ -66,6 +72,7 @@ int main() {
 		//	op2.value = op_2;	\
 		//	_vm_mov_(vm, op_1, op2); \
 		//	_CURR_INSTRUCTION_ += 4;
+		res = 0;
 	}
 	END_PROTECT(res);
 	

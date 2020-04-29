@@ -13,6 +13,8 @@ typedef int		DWORD;
 typedef char	BYTE;
 typedef BYTE	op_type;
 
+// extern DWORD _init_ops_(DWORD op1, DWORD op2, DWORD* vR9_reg);
+
 typedef struct _OP_ 
 {
 	op_type type;
@@ -33,10 +35,6 @@ enum _types_
 
 //----------------------
 #define R0		1
-#define r0		\
-	define_operand(vm, reg_, R0))
-	
-
 #define R1		2
 #define R2		3
 #define	R3		4
@@ -46,23 +44,37 @@ enum _types_
 
 #define IP		8
 #define	SP		9
-#define	BP		10
-																				// пока аналогично, но можно и больше(4 бита отведено (не больше 32 Кбайт)
-#define FLAGS	0		/*														|	DS   |size SS (0_0 - 128 byte, 0_1 - 256 bytes, 1_0 - 512 bytes, 1_1 - 1024 bytes)
-							_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ |_ _ _ _ | _ _
-																					   
+#define	r9		10
+																				 // пока аналогично, но можно и больше(4 бита отведено (не больше 32 Кбайт)
+#define FLAGS	0		/*									|COF | MOF |	 | 	?	   |	DS  |size SS (0_0 - 128 byte, 0_1 - 256 bytes, 1_0 - 512 bytes, 1_1 - 1024 bytes)
+							_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ |_ _ | _ _ | _ _ | _ _ _ _ |_ _ _ _ | _ _
+																
+															- COF - conts operand flag (12 - 13)
+															- MOF - memory operand flag (14 - 15)
 						*/
 
-//------------
-#define REG_TYPE		(BYTE)1
-#define CONST_TYPE		(BYTE)2
+//----------------------
+#define _128_B_		0
+#define _256_B_		1
+#define _512_B_		2
+#define _1_KB_		3
+#define _2_KB_		4
+#define _4_KB_		5
+#define _8_KB_		6
+#define _16_KB_		7
+#define _32_KB_		8
 
+//------------
 #define FLAG_SIZE_SS		(vm->REG[FLAGS] & 0b11)
 #define FLAG_SIZE_DS		((vm->REG[FLAGS] & 0b111100) >> 2)
 
 
+#define SIZE_SS				(1 << (FLAG_SIZE_SS + 7))
+#define SIZE_DS				(1 << (FLAG_SIZE_DS + 7))
+
 //----------------------
-typedef struct _VM_ {
+typedef struct _VM_ 
+{
 	uint32_t* CS;
 	uint32_t* SS;
 	uint32_t* DS;
@@ -108,7 +120,8 @@ static BYTE table[4][4] = OPCODE_TABLE;
 //----------------------
 static void _generate_opcode_table_();
 void _push_(vm_ptr vm, DWORD value);
-enum _types_ define_operand(vm_ptr vm, enum _types_ type, BYTE num_reg);
+void _pop_(vm_ptr vm, DWORD* dst);
+uint32_t define_operand(vm_ptr vm, enum _types_ type, DWORD ex_type);
 
 
 void _vm_init_(vm_ptr vm);

@@ -14,25 +14,52 @@ void _generate_opcode_table_()
 void _push_(vm_ptr vm, DWORD value)
 {
 	DWORD curr_addr = vm->REG[SP] + vm->SS;
-	if (curr_addr > vm->SS + 128) {
-		vm->REG[SP] = 0;
+	if (curr_addr > vm->SS + SIZE_SS) {
+		vm->REG[SP] = 0x00000000;
 	}
 	vm->SS[vm->REG[SP]] = value;
-	vm->REG[SP] += 4;
+	vm->REG[SP] += 0x00000004;
 }
 
-DWORD define_operand(vm_ptr vm, enum _types_ type)
+void _pop_(vm_ptr vm, DWORD* dst)
+{
+	vm->REG[SP] -= 0x00000004;
+	DWORD curr_addr = vm->REG[SP] + vm->SS;
+	if (curr_addr < vm->SS) {
+		*dst = 0;
+		vm->REG[SP] = 0x00000000;
+	}
+	else {
+		*dst = vm->SS[vm->REG[SP]];
+	}
+}
+
+uint32_t define_operand(vm_ptr vm, enum _types_ type, DWORD ex_type)
 {
 	// _push_(vm, (DWORD)(((DWORD)type << 8) + num_reg));
-	_push_(vm, (DWORD)type);
-	return type;
+	_push_(vm, type);
+	switch (type) 
+	{
+	case reg_:
+		vm->REG[r9] = (type << 2) + ex_type;
+		break;
+	case imm_:
+		
+		break;
+	case comst_:
+		break;
+	default:
+		break;
+	}
+	
+	return vm->REG[r9];
 }
 
 void _vm_init_(vm_ptr vm)
 {
 	DWORD size = 1 << (FLAG_SIZE_SS + 7);
-	vm->DS = (uint32_t*)malloc(1 << (FLAG_SIZE_DS + 7));
-	vm->SS = (uint32_t*)malloc(1 << (FLAG_SIZE_SS + 7));
+	vm->DS = (uint32_t*)malloc(SIZE_DS);
+	vm->SS = (uint32_t*)malloc(SIZE_SS);
 	vm->CS = (uint32_t*)malloc(12);
 
 
@@ -41,7 +68,7 @@ void _vm_init_(vm_ptr vm)
 
 	vm->REG[SP] = 0;
 	vm->REG[IP] = 0;
-	vm->REG[BP] = vm->REG[SP];
+	vm->REG[r9] = vm->REG[SP];
 }
 
 DWORD _vm_destruct_(vm_ptr vm)

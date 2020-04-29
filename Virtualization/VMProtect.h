@@ -6,15 +6,23 @@
 #include "vm.h"
 
 //----------------------
-#define _128_B_		0
-#define _256_B_		1
-#define _512_B_		2
-#define _1_KB_		3
-#define _2_KB_		4
-#define _4_KB_		5
-#define _8_KB_		6
-#define _16_KB_		7
-#define _32_KB_		8
+#define r0		\
+	define_operand(vm, reg_, R0)
+#define r1		\
+	define_operand(vm, reg_, R1)
+#define r2		\
+	define_operand(vm, reg_, R2)
+#define r3		\
+	define_operand(vm, reg_, R3)
+#define r4		\
+	define_operand(vm, reg_, R4)
+#define r5		\
+	define_operand(vm, reg_, R5)
+#define r6		\
+	define_operand(vm, reg_, R6)
+
+#define IMM(addr)	\
+	define_operand(vm, imm_, addr ^ 0x10) //в FLAGS бит ставить
 
 //-----------------
 #define _128_BYTE	0x80
@@ -113,12 +121,11 @@
 
 
 #define VM_MOV(op_1, op_2)	\
-	_init_ops_(op_1, op_2, &vm->REG[BP]); \
+	op_1; op_2; \
+	OP* op1 = (OP*)malloc(sizeof(OP)); \
+	OP* op2 = (OP*)malloc(sizeof(OP)); \
+	op1 = _init_ops_(op1, op2, &vm->REG[r9]); \
 	vm->CS[_CURR_INSTRUCTION_] = table __MOV_REG_REG__; \
-	OP op2; \
-	op2.type = CONST_TYPE; \
-	op2.value =  op_2;	\
-	_vm_mov_(vm, op_1, op2); \
 	_CURR_INSTRUCTION_ += 4;
 
 #endif // ! _VM_PROTECT_
