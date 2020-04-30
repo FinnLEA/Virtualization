@@ -21,8 +21,31 @@
 #define r6		\
 	define_operand(vm, reg_, R6)
 
+/* ex. r1
+	v_sp <- type						ex.: sp-> 0x00000001 -> r1
+	r9 <- [ (type|num_reg)| мусор ]	ex.: r9 = 0x000012cd -> r1
+		     4бит| 4бит	  | 1байт
+*/
+
 #define IMM(addr)	\
-	define_operand(vm, imm_, addr ^ 0x10) //в FLAGS бит ставить
+	define_operand(vm, imm_, addr) //в FLAGS бит ставить
+
+/* ex. [0x11223344]
+	v_sp <- (type + addr)					ex.: sp-> 0x11223346 
+	r9 <- [ (type) ] | first_byte addr	ex.: r9 = 0x00000244
+			1 byte   |	1 byte
+*/		    			
+
+#define CONST(val)	\
+	define_operand(vm, comst_, val)
+
+/* ex. 0x11223344
+	v_sp <- value							ex.: sp-> 0x11223344
+	r9 <- [ (type) ] | мусор			ex.: r9 = 0x000003ff
+			1 byte   | 1 byte
+*/
+
+// При двух операнах код первого операнда сдвигается пр.: vm_mov r1, imm(0x11223344) -> r9 = 0x12cd03ff
 
 //-----------------
 #define _128_BYTE	0x80
@@ -109,7 +132,7 @@
 	_DEFINE_FLAG_SIZE_SS_(limit_SS) \
 	_DEFINE_FLAG_SIZE_DS_(limit_DS) \
 	_vm_init_(vm); \
-	PCURROPTYPE type = (PCURROPTYPE)malloc(sizeof(CURROPTYPE));
+	//PCURROPTYPE type = (PCURROPTYPE)malloc(sizeof(CURROPTYPE));
 	
 	
 
@@ -126,7 +149,9 @@
 	OP* op2 = (OP*)malloc(sizeof(OP)); \
 	op1 = _init_ops_(op1, op2, &vm->REG[r9]); \
 	vm->CS[_CURR_INSTRUCTION_] = table __MOV_REG_REG__; \
-	_CURR_INSTRUCTION_ += 4;
+	_CURR_INSTRUCTION_ += 4; \
+	if(READ_MOF) \
+		WRITE_MOF(0); \
 
 #endif // ! _VM_PROTECT_
 

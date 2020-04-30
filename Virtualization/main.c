@@ -61,9 +61,10 @@ int main() {
 		DWORD res1;
 		_push_(vm, 2);
 		_pop_(vm, &res1);
+		
 		//define_operand(vm, reg_, R0);
 		//_init_ops_(0x112233, define_operand(vm, reg_, R0), vm->REG[r9]);
-		VM_MOV(IMM(0x112233), r0);
+		VM_MOV(r0, CONST(0xffffffff));
 		
 		//_init_ops_(0x112233, r0, &vm->REG[BP]); \
 		//	vm->CS[_CURR_INSTRUCTION_] = table __MOV_REG_REG__; \
@@ -75,7 +76,6 @@ int main() {
 		res = 0;
 	}
 	END_PROTECT(res);
-	
 
 	printf("%d\n", res);
 	system("pause");

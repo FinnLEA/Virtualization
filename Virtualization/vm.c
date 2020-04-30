@@ -17,7 +17,7 @@ void _push_(vm_ptr vm, DWORD value)
 	if (curr_addr > vm->SS + SIZE_SS) {
 		vm->REG[SP] = 0x00000000;
 	}
-	vm->SS[vm->REG[SP]] = value;
+	vm->SS[vm->REG[SP] / 4] = value;
 	vm->REG[SP] += 0x00000004;
 }
 
@@ -37,17 +37,60 @@ void _pop_(vm_ptr vm, DWORD* dst)
 uint32_t define_operand(vm_ptr vm, enum _types_ type, DWORD ex_type)
 {
 	// _push_(vm, (DWORD)(((DWORD)type << 8) + num_reg));
-	_push_(vm, type);
 	switch (type) 
 	{
 	case reg_:
-		vm->REG[r9] = (type << 2) + ex_type;
+		_push_(vm, type); // при подготовке операндов к инструкции берем тип из вирт.стека
+		if (READ_MOF) { // код предыдущего операнда - память : 2 байта (тип, последний байт вирт. адреса)
+			vm->REG[r9] = (vm->REG[r9] << 16) | ((((type << 4) | ex_type) << 8) | 0xcd); // из r9 будем брать код операнда
+		}
+		else if (READ_COF) { // аналогично
+			vm->REG[r9] = (vm->REG[r9] << 16) | ((((type << 4) | ex_type) << 8) | 0xcd);
+		}
+		else if (READ_ROF){ // код предыдущего операнда - регистр : 1-ый байт (4 ст.бита - тип операнда, 4 мл.бита - номер регистра), 2-й байт - мусор
+			vm->REG[r9] = (vm->REG[r9] << 16) | ((((type << 4) | ex_type) << 8) | 0xcd);
+		}
+		else { // первый операнд в интсрукции
+			vm->REG[r9] = ((((type << 4) | ex_type) << 8) | 0xcd);
+		}
+		// ставим бит регистра
+		WRITE_ROF(1);
 		break;
+
 	case imm_:
-		
+		_push_(vm, ((BYTE)(type) + ex_type)); // при подготовке операндов к инструкции берем (значение - тип из второго байта)  
+		if (READ_MOF) {
+			vm->REG[r9] = (vm->REG[r9] << 16) | ((type << 8) + (ex_type & 0xff));
+		}
+		else if (READ_COF) {
+			vm->REG[r9] = (vm->REG[r9] << 16) | ((type << 8) + (ex_type & 0xff));
+		}
+		else if (READ_ROF) {
+			vm->REG[r9] = (vm->REG[r9] << 16) | ((type << 8) + (ex_type & 0xff));
+		}
+		else {
+			vm->REG[r9] = (type << 8) + (ex_type & 0xff);
+		}
+		WRITE_MOF(1);
 		break;
-	case comst_:
+
+	case comst_: // в вирт. стек значение; в r9 2 байта: 1-ый байт - тип операнда, 2-ый байт - мусор
+		_push_(vm, ex_type);
+		if (READ_MOF) {
+			vm->REG[r9] = (vm->REG[r9] << 16) | ((type << 8) | 0xff);
+		}
+		else if (READ_COF) {
+			vm->REG[r9] = (vm->REG[r9] << 16) | ((type << 8) | 0xff);
+		}
+		else if (READ_ROF) {
+			vm->REG[r9] = (vm->REG[r9] << 16) | ((type << 8) | 0xff);
+		}
+		else {
+			vm->REG[r9] = ((type << 8) | 0xff);
+		}
+		WRITE_COF(1);
 		break;
+
 	default:
 		break;
 	}

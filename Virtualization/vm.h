@@ -28,7 +28,7 @@ typedef struct _operand_type_
 
 enum _types_
 {
-	reg_,
+	reg_ = 1,
 	imm_,
 	comst_
 };
@@ -46,12 +46,32 @@ enum _types_
 #define	SP		9
 #define	r9		10
 																				 // пока аналогично, но можно и больше(4 бита отведено (не больше 32 Кбайт)
-#define FLAGS	0		/*									|COF | MOF |	 | 	?	   |	DS  |size SS (0_0 - 128 byte, 0_1 - 256 bytes, 1_0 - 512 bytes, 1_1 - 1024 bytes)
-							_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ |_ _ | _ _ | _ _ | _ _ _ _ |_ _ _ _ | _ _
+#define FLAGS	0		/*										  | COF | MOF |	ROF | 	?	  |	DS     |size SS (0_0 - 128 byte, 0_1 - 256 bytes, 1_0 - 512 bytes, 1_1 - 1024 bytes)
+							_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ |  _  |  _  |  _  | _ _ _ _ |_ _ _ _ | _ _
 																
-															- COF - conts operand flag (12 - 13)
-															- MOF - memory operand flag (14 - 15)
+															- MOF - memory operand flag (12)
+															- COF - const operand flag (13)
+															- ROF - register operand flag (11)
 						*/
+
+#define ROR(val, step)		((val >> step) | (val << (32 - step)))
+#define ROL(val, step)		((val << step) | (val >> (32 - step)))	
+
+#define FLAG_SIZE_SS		(vm->REG[FLAGS] & 0b11)
+#define FLAG_SIZE_DS		((vm->REG[FLAGS] & 0b111100) >> 2)
+
+//#define FLAG_ROF			(vm->REG[FLAGS] >>>> 11)
+#define FLAG_ROF			(ROR(vm->REG[FLAGS], 11))
+#define READ_ROF			(FLAG_ROF & 0b1)
+#define WRITE_ROF(bits)		(vm->REG[FLAGS] |= ROL(((FLAG_ROF & 0b0) | bits), 11))
+
+#define FLAG_MOF			(ROR(vm->REG[FLAGS], 12))
+#define READ_MOF			(FLAG_MOF & 0b1)
+#define WRITE_MOF(bits)		(vm->REG[FLAGS] |= ROL(((FLAG_MOF & 0b0) | bits), 12))
+
+#define FLAG_COF			(ROR(vm->REG[FLAGS], 12))
+#define READ_COF			(FLAG_COF & 0b1)
+#define WRITE_COF(bits)		(vm->REG[FLAGS] |= ROL(((FLAG_COF & 0b0) | bits), 13))
 
 //----------------------
 #define _128_B_		0
@@ -65,9 +85,6 @@ enum _types_
 #define _32_KB_		8
 
 //------------
-#define FLAG_SIZE_SS		(vm->REG[FLAGS] & 0b11)
-#define FLAG_SIZE_DS		((vm->REG[FLAGS] & 0b111100) >> 2)
-
 
 #define SIZE_SS				(1 << (FLAG_SIZE_SS + 7))
 #define SIZE_DS				(1 << (FLAG_SIZE_DS + 7))
