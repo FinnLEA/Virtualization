@@ -9,28 +9,23 @@
 
 //----------------------
 typedef unsigned int	uint32_t;
-typedef int		DWORD;
-typedef char	BYTE;
-typedef BYTE	op_type;
+typedef int				DWORD;
+typedef char			BYTE;
+typedef BYTE			op_type;
 
-// extern DWORD _init_ops_(DWORD op1, DWORD op2, DWORD* vR9_reg);
-
+#pragma pack(push, 1)
 typedef struct _OP_ 
 {
 	op_type type;
 	DWORD value;
 } OP;
-
-typedef struct _operand_type_
-{
-	op_type op;
-} CURROPTYPE, *PCURROPTYPE;
+#pragma pack(pop)
 
 enum _types_
 {
 	reg_ = 1,
 	imm_,
-	comst_
+	const_
 };
 
 //----------------------
@@ -45,13 +40,13 @@ enum _types_
 #define IP		8
 #define	SP		9
 #define	r9		10
-																				 // пока аналогично, но можно и больше(4 бита отведено (не больше 32 Кбайт)
+																								// пока аналогично, но можно и больше(4 бита отведено (не больше 32 Кбайт)
 #define FLAGS	0		/*										  | COF | MOF |	ROF | 	?	  |	DS     |size SS (0_0 - 128 byte, 0_1 - 256 bytes, 1_0 - 512 bytes, 1_1 - 1024 bytes)
 							_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ |  _  |  _  |  _  | _ _ _ _ |_ _ _ _ | _ _
 																
-															- MOF - memory operand flag (12)
-															- COF - const operand flag (13)
-															- ROF - register operand flag (11)
+															- MOF - memory operand flag (11)
+															- COF - const operand flag (12)
+															- ROF - register operand flag (10)
 						*/
 
 #define ROR(val, step)		((val >> step) | (val << (32 - step)))
@@ -60,18 +55,17 @@ enum _types_
 #define FLAG_SIZE_SS		(vm->REG[FLAGS] & 0b11)
 #define FLAG_SIZE_DS		((vm->REG[FLAGS] & 0b111100) >> 2)
 
-//#define FLAG_ROF			(vm->REG[FLAGS] >>>> 11)
-#define FLAG_ROF			(ROR(vm->REG[FLAGS], 11))
+#define FLAG_ROF			(ROR(vm->REG[FLAGS], 10))
 #define READ_ROF			(FLAG_ROF & 0b1)
-#define WRITE_ROF(bits)		(vm->REG[FLAGS] |= ROL(((FLAG_ROF & 0b0) | bits), 11))
+#define WRITE_ROF(bits)		(vm->REG[FLAGS] = ROL(((FLAG_ROF & 0xfffffffe) | bits), 10))
 
-#define FLAG_MOF			(ROR(vm->REG[FLAGS], 12))
+#define FLAG_MOF			(ROR(vm->REG[FLAGS], 11))
 #define READ_MOF			(FLAG_MOF & 0b1)
-#define WRITE_MOF(bits)		(vm->REG[FLAGS] |= ROL(((FLAG_MOF & 0b0) | bits), 12))
+#define WRITE_MOF(bits)		(vm->REG[FLAGS] = ROL(((FLAG_MOF & 0xfffffffe) | bits), 11))
 
 #define FLAG_COF			(ROR(vm->REG[FLAGS], 12))
 #define READ_COF			(FLAG_COF & 0b1)
-#define WRITE_COF(bits)		(vm->REG[FLAGS] |= ROL(((FLAG_COF & 0b0) | bits), 13))
+#define WRITE_COF(bits)		(vm->REG[FLAGS] = ROL(((FLAG_COF & 0xfffffffe) | bits), 12))
 
 //----------------------
 #define _128_B_		0
@@ -94,7 +88,7 @@ typedef struct _VM_
 {
 	uint32_t* CS;
 	uint32_t* SS;
-	uint32_t* DS;
+	BYTE* DS;
 
 	uint32_t REG[11];
 
@@ -136,7 +130,7 @@ typedef struct _VM_
 static BYTE table[4][4] = OPCODE_TABLE;
 //----------------------
 static void _generate_opcode_table_();
-void _push_(vm_ptr vm, DWORD value);
+void _push_(vm_ptr, DWORD);
 void _pop_(vm_ptr vm, DWORD* dst);
 uint32_t define_operand(vm_ptr vm, enum _types_ type, DWORD ex_type);
 
@@ -144,15 +138,14 @@ uint32_t define_operand(vm_ptr vm, enum _types_ type, DWORD ex_type);
 void _vm_init_(vm_ptr vm);
 DWORD _vm_destruct_(vm_ptr vm);
 
-void _vm_mov_(vm_ptr vm, BYTE op1, OP op2);
-void _vm_add_(vm_ptr vm, OP op1, OP op2);
-void _vm_sub_(vm_ptr vm, OP op1, OP op2);
-void _vm_xor_(vm_ptr vm, OP op1, OP op2);
-void _vm_and_(vm_ptr vm, OP op1, OP op2);
-void _vm_or_(vm_ptr vm, OP op1, OP op2);
-void _vm_push_(vm_ptr vm, OP op);
-void _vm_pop_(vm_ptr vm, OP op);
+void _vm_mov_(vm_ptr vm, OP* op1, OP* op2);
+void _vm_add_(vm_ptr vm, OP* op1, OP* op2);
+void _vm_sub_(vm_ptr vm, OP* op1, OP* op2);
+void _vm_xor_(vm_ptr vm, OP* op1, OP* op2);
+void _vm_and_(vm_ptr vm, OP* op1, OP* op2);
+void _vm_or_(vm_ptr vm, OP* op1, OP* op2);
+void _vm_push_(vm_ptr vm, OP* op);
+void _vm_pop_(vm_ptr vm, OP* op);
 void _vm_call_(vm_ptr vm, DWORD addr);
 
-void foo();
 

@@ -30,7 +30,7 @@ void _pop_(vm_ptr vm, DWORD* dst)
 		vm->REG[SP] = 0x00000000;
 	}
 	else {
-		*dst = vm->SS[vm->REG[SP]];
+		*dst = vm->SS[vm->REG[SP] / 4];
 	}
 }
 
@@ -74,7 +74,7 @@ uint32_t define_operand(vm_ptr vm, enum _types_ type, DWORD ex_type)
 		WRITE_MOF(1);
 		break;
 
-	case comst_: // в вирт. стек значение; в r9 2 байта: 1-ый байт - тип операнда, 2-ый байт - мусор
+	case const_: // в вирт. стек значение; в r9 2 байта: 1-ый байт - тип операнда, 2-ый байт - мусор
 		_push_(vm, ex_type);
 		if (READ_MOF) {
 			vm->REG[r9] = (vm->REG[r9] << 16) | ((type << 8) | 0xff);
@@ -101,7 +101,7 @@ uint32_t define_operand(vm_ptr vm, enum _types_ type, DWORD ex_type)
 void _vm_init_(vm_ptr vm)
 {
 	DWORD size = 1 << (FLAG_SIZE_SS + 7);
-	vm->DS = (uint32_t*)malloc(SIZE_DS);
+	vm->DS = (BYTE*)malloc(SIZE_DS);
 	vm->SS = (uint32_t*)malloc(SIZE_SS);
 	vm->CS = (uint32_t*)malloc(12);
 
@@ -121,19 +121,206 @@ DWORD _vm_destruct_(vm_ptr vm)
 	free(vm->SS);
 	DWORD end_value = vm->REG[R0];
 	
-	for (int i = 0; i < FLAGS; ++i)
+	for (int i = 0; i < r9; ++i)
 		vm->REG[i] = 0;
 	return end_value;
 }
 
-void _vm_mov_(vm_ptr vm, OP op1, OP op2)
+void _vm_mov_(vm_ptr vm, OP* op1, OP* op2)
 {
 	DWORD tmp;
-	_asm
-	{
-		lea esi, [op2]
-		mov eax, [esi].value
-		mov [tmp], eax
+	switch (op2->type)
+	{	
+	case imm_:
+		tmp = *((DWORD*)((BYTE*)(vm->DS + op2->value)));
+		break;
+
+	case const_:
+		tmp = op2->value;
+		break;
+
+	default:
+		tmp = vm->REG[(op2->type) & 0x0f];
+		break;
 	}
-	vm->REG[op1.value] = tmp;
+
+	switch (op1->type)
+	{
+	case imm_:
+		*((DWORD*)((BYTE*)(vm->DS + op1->value))) = tmp;
+		break;
+
+	case const_:
+		return;
+
+	default:
+		vm->REG[(op1->type) & 0x0f] = tmp;
+		break;
+	}
+
+}
+
+void _vm_add_(vm_ptr vm, OP * op1, OP * op2)
+{
+	DWORD tmp;
+	switch (op2->type)
+	{
+	case imm_:
+		tmp = *((DWORD*)((BYTE*)(vm->DS + op2->value)));
+		break;
+
+	case const_:
+		tmp = op2->value;
+		break;
+
+	default:
+		tmp = vm->REG[(op2->type) & 0x0f];
+		break;
+	}
+
+	switch (op1->type)
+	{
+	case imm_:
+		*((DWORD*)((BYTE*)(vm->DS + op1->value))) += tmp;
+		break;
+
+	case const_:
+		return;
+
+	default:
+		vm->REG[(op1->type) & 0x0f] += tmp;
+		break;
+	}
+}
+
+void _vm_sub_(vm_ptr vm, OP * op1, OP * op2)
+{
+	DWORD tmp;
+	switch (op2->type)
+	{
+	case imm_:
+		tmp = *((DWORD*)((BYTE*)(vm->DS + op2->value)));
+		break;
+
+	case const_:
+		tmp = op2->value;
+		break;
+
+	default:
+		tmp = vm->REG[(op2->type) & 0x0f];
+		break;
+	}
+
+	switch (op1->type)
+	{
+	case imm_:
+		*((DWORD*)((BYTE*)(vm->DS + op1->value))) -= tmp;
+		break;
+
+	case const_:
+		return;
+
+	default:
+		vm->REG[(op1->type) & 0x0f] -= tmp;
+		break;
+	}
+}
+
+void _vm_xor_(vm_ptr vm, OP * op1, OP * op2)
+{
+	DWORD tmp;
+	switch (op2->type)
+	{
+	case imm_:
+		tmp = *((DWORD*)((BYTE*)(vm->DS + op2->value)));
+		break;
+
+	case const_:
+		tmp = op2->value;
+		break;
+
+	default:
+		tmp = vm->REG[(op2->type) & 0x0f];
+		break;
+	}
+
+	switch (op1->type)
+	{
+	case imm_:
+		*((DWORD*)((BYTE*)(vm->DS + op1->value))) ^= tmp;
+		break;
+
+	case const_:
+		return;
+
+	default:
+		vm->REG[(op1->type) & 0x0f] ^= tmp;
+		break;
+	}
+}
+
+void _vm_and_(vm_ptr vm, OP * op1, OP * op2)
+{
+	DWORD tmp;
+	switch (op2->type)
+	{
+	case imm_:
+		tmp = *((DWORD*)((BYTE*)(vm->DS + op2->value)));
+		break;
+
+	case const_:
+		tmp = op2->value;
+		break;
+
+	default:
+		tmp = vm->REG[(op2->type) & 0x0f];
+		break;
+	}
+
+	switch (op1->type)
+	{
+	case imm_:
+		*((DWORD*)((BYTE*)(vm->DS + op1->value))) &= tmp;
+		break;
+
+	case const_:
+		return;
+
+	default:
+		vm->REG[(op1->type) & 0x0f] &= tmp;
+		break;
+	}
+}
+
+void _vm_or_(vm_ptr vm, OP * op1, OP * op2)
+{
+	DWORD tmp;
+	switch (op2->type)
+	{
+	case imm_:
+		tmp = *((DWORD*)((BYTE*)(vm->DS + op2->value)));
+		break;
+
+	case const_:
+		tmp = op2->value;
+		break;
+
+	default:
+		tmp = vm->REG[(op2->type) & 0x0f];
+		break;
+	}
+
+	switch (op1->type)
+	{
+	case imm_:
+		*((DWORD*)((BYTE*)(vm->DS + op1->value))) |= tmp;
+		break;
+
+	case const_:
+		return;
+
+	default:
+		vm->REG[(op1->type) & 0x0f] |= tmp;
+		break;
+	}
 }

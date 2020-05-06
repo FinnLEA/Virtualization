@@ -27,6 +27,19 @@
 		     4бит| 4бит	  | 1байт
 */
 
+#define W_IMM(addr)	\
+	//WRITE_DIMM(1) \
+	// IMM(addr)
+
+#define B_IMM(addr) \
+	//WRITE_DIMM(1) \
+	// IMM(addr)
+
+
+#define D_IMM(addr)	\
+	//WRITE_DIMM(1) \
+	// IMM(addr)
+
 #define IMM(addr)	\
 	define_operand(vm, imm_, addr) //в FLAGS бит ставить
 
@@ -37,7 +50,7 @@
 */		    			
 
 #define CONST(val)	\
-	define_operand(vm, comst_, val)
+	define_operand(vm, const_, val)
 
 /* ex. 0x11223344
 	v_sp <- value							ex.: sp-> 0x11223344
@@ -132,6 +145,8 @@
 	_DEFINE_FLAG_SIZE_SS_(limit_SS) \
 	_DEFINE_FLAG_SIZE_DS_(limit_DS) \
 	_vm_init_(vm); \
+	OP* op1 = (OP*)malloc(sizeof(OP)); \
+	OP* op2 = (OP*)malloc(sizeof(OP)); 
 	//PCURROPTYPE type = (PCURROPTYPE)malloc(sizeof(CURROPTYPE));
 	
 	
@@ -145,13 +160,87 @@
 
 #define VM_MOV(op_1, op_2)	\
 	op_1; op_2; \
-	OP* op1 = (OP*)malloc(sizeof(OP)); \
-	OP* op2 = (OP*)malloc(sizeof(OP)); \
-	op1 = _init_ops_(op1, op2, &vm->REG[r9]); \
+	_init_ops_(vm, op1, op2); \
 	vm->CS[_CURR_INSTRUCTION_] = table __MOV_REG_REG__; \
+	_vm_mov_(vm, op1, op2); \
 	_CURR_INSTRUCTION_ += 4; \
-	if(READ_MOF) \
+	if((READ_MOF) || (READ_COF) || (READ_ROF)) { \
 		WRITE_MOF(0); \
+		WRITE_COF(0); \
+		WRITE_ROF(0); \
+	} 
+	//free(op1); \
+	//free(op2); 
+
+
+#define VM_ADD(op_1, op_2)	\
+	op_1; op_2; \
+	_init_ops_(vm, op1, op2); \
+	_vm_add_(vm, op1, op2); \
+	_CURR_INSTRUCTION_ += 4; \
+	if(READ_MOF || READ_COF || READ_ROF) { \
+		WRITE_MOF(0); \
+		WRITE_COF(0); \
+		WRITE_ROF(0); \
+	} 
+	//free(op1); \
+	//free(op2); 
+
+
+#define VM_SUB(op_1, op_2)	\
+	op_1; op_2; \
+	_init_ops_(vm, op1, op2); \
+	_vm_sub_(vm, op1, op2); \
+	_CURR_INSTRUCTION_ += 4; \
+	if(READ_MOF || READ_COF || READ_ROF) { \
+		WRITE_MOF(0); \
+		WRITE_COF(0); \
+		WRITE_ROF(0); \
+	} 
+	//free(op1); \
+	//free(op2); 
+
+
+#define VM_XOR(op_1, op_2)	\
+	op_1; op_2; \
+	_init_ops_(vm, op1, op2); \
+	_vm_xor_(vm, op1, op2); \
+	_CURR_INSTRUCTION_ += 4; \
+	if(READ_MOF || READ_COF || READ_ROF) { \
+		WRITE_MOF(0); \
+		WRITE_COF(0); \
+		WRITE_ROF(0); \
+	}
+	//free(op1); \
+	//free(op2); 
+
+
+#define VM_AND(op_1, op_2)	\
+	op_1; op_2; \
+	_init_ops_(vm, op1, op2); \
+	_vm_and_(vm, op1, op2); \
+	_CURR_INSTRUCTION_ += 4; \
+	if(READ_MOF || READ_COF || READ_ROF) { \
+		WRITE_MOF(0); \
+		WRITE_COF(0); \
+		WRITE_ROF(0); \
+	}
+	//free(op1); \
+	//free(op2); 
+
+
+#define VM_OR(op_1, op_2)	\
+	op_1; op_2; \
+	_init_ops_(vm, op1, op2); \
+	_vm_or_(vm, op1, op2); \
+	_CURR_INSTRUCTION_ += 4; \
+	if(READ_MOF || READ_COF || READ_ROF) { \
+		WRITE_MOF(0); \
+		WRITE_COF(0); \
+		WRITE_ROF(0); \
+	} 
+	//free(op1); \
+	//free(op2); 
 
 #endif // ! _VM_PROTECT_
 

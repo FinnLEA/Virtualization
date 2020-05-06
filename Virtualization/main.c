@@ -64,7 +64,24 @@ int main() {
 		
 		//define_operand(vm, reg_, R0);
 		//_init_ops_(0x112233, define_operand(vm, reg_, R0), vm->REG[r9]);
-		VM_MOV(r0, CONST(0xffffffff));
+		VM_MOV(IMM(0x00000004), CONST(0xffffffff));
+		//if (READ_MOF || READ_COF || READ_ROF) {
+			//res = 0xd;
+			//res = ROR(res, 11);
+			////res = FLAG_COF;
+			//res &= 0xfffffffe;
+			//res = ROL((res | 1), 11);
+			//vm->REG[FLAGS] = ROL(((FLAG_COF & 0xfffffffe) | 0), 12);
+			//vm->REG[FLAGS] = ROL(((FLAG_COF & 0xfffffffe) | 1), 12);
+			//	WRITE_MOF(0); 
+			//	//WRITE_COF(0); 
+			//	WRITE_ROF(0); 
+		//}
+
+		VM_MOV(r0, IMM(4));
+		VM_ADD(r0, CONST(2));
+		VM_OR(r0, CONST(0X10));
+		VM_MOV(r1, r0);
 		
 		//_init_ops_(0x112233, r0, &vm->REG[BP]); \
 		//	vm->CS[_CURR_INSTRUCTION_] = table __MOV_REG_REG__; \
