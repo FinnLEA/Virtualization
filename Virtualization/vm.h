@@ -5,13 +5,30 @@
 #include <stdlib.h>
 #include <memory.h>
 
-//----------------------
+#include "Enigma.h"
+#include "Types.h"
+
 
 //----------------------
-typedef unsigned int	uint32_t;
-typedef int				DWORD;
-typedef char			BYTE;
 typedef BYTE			op_type;
+
+//----------------------
+//
+//#pragma pack(push, 1)
+//typedef struct _keys_
+//{
+//	BYTE first;
+//	BYTE second;
+//	BYTE third;
+//} KEYS, *PKEYS;
+//#pragma pack(pop)
+//
+//static KEYS keys;
+////----------------------
+//
+//static void genric_keys();
+
+//----------------------
 
 #pragma pack(push, 1)
 typedef struct _OP_ 
@@ -23,12 +40,13 @@ typedef struct _OP_
 
 enum _types_
 {
-	reg_ = 1,
+	reg_ = 0x01,
 	imm_,
 	const_
 };
 
 //----------------------
+
 #define R0		1
 #define R1		2
 #define R2		3
@@ -129,7 +147,7 @@ typedef struct _VM_
 //static uint32_t** opcode_table;
 static BYTE table[4][4] = OPCODE_TABLE;
 //----------------------
-static void _generate_opcode_table_();
+void _generate_opcode_table_();
 void _push_(vm_ptr, DWORD);
 void _pop_(vm_ptr vm, DWORD* dst);
 uint32_t define_operand(vm_ptr vm, enum _types_ type, DWORD ex_type);

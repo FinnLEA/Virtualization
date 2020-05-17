@@ -22,14 +22,15 @@
 	define_operand(vm, reg_, R6)
 
 /* ex. r1
-	v_sp <- type						ex.: sp-> 0x00000001 -> r1
-	r9 <- [ (type|num_reg)| мусор ]	ex.: r9 = 0x000012cd -> r1
+	v_sp <- type						ex.: sp-> 0x00000001 -> r1 // убрал
+	r9 <- [ (type|num_reg)| мусор ]		ex.: r9 = 0x000012cd -> r1
 		     4бит| 4бит	  | 1байт
 */
 
 #define W_IMM(addr)	\
 	//WRITE_DIMM(1) \
 	// IMM(addr)
+
 
 #define B_IMM(addr) \
 	//WRITE_DIMM(1) \
@@ -45,7 +46,7 @@
 
 /* ex. [0x11223344]
 	v_sp <- (type + addr)					ex.: sp-> 0x11223346 
-	r9 <- [ (type) ] | first_byte addr	ex.: r9 = 0x00000244
+	r9 <- [ (type) ] | first_byte addr		ex.: r9 = 0x00000244
 			1 byte   |	1 byte
 */		    			
 
@@ -54,11 +55,11 @@
 
 /* ex. 0x11223344
 	v_sp <- value							ex.: sp-> 0x11223344
-	r9 <- [ (type) ] | мусор			ex.: r9 = 0x000003ff
+	r9 <- [ (type) ] | мусор				ex.: r9 = 0x000003ff
 			1 byte   | 1 byte
 */
 
-// При двух операнах код первого операнда сдвигается пр.: vm_mov r1, imm(0x11223344) -> r9 = 0x12cd03ff
+// При двух операнах код первого операнда сдвигается пр.: vm_mov r1, imm(0x11223344) -> r9 = 0x12cd0244
 
 //-----------------
 #define _128_BYTE	0x80
@@ -139,7 +140,7 @@
 		vm->REG[FLAGS] |= (_512_B_ << 2);
 
 //----------------------
-#define BEGIN_PROTECT(limit_DS, limit_SS) \
+#define _BEGIN_PROTECT_(limit_DS, limit_SS) \
 	vm_ptr vm = (vm_ptr)malloc(sizeof(vm_)); \
 	vm->REG[FLAGS] = 0; \
 	_DEFINE_FLAG_SIZE_SS_(limit_SS) \
@@ -148,20 +149,14 @@
 	OP* op1 = (OP*)malloc(sizeof(OP)); \
 	OP* op2 = (OP*)malloc(sizeof(OP)); 
 	//PCURROPTYPE type = (PCURROPTYPE)malloc(sizeof(CURROPTYPE));
-	
-	
 
 #define END_PROTECT(res)	\
-	_asm{\
-		mov eax, 1 \
-	} \
 	res = _vm_destruct_(vm);
 
 
 #define VM_MOV(op_1, op_2)	\
 	op_1; op_2; \
 	_init_ops_(vm, op1, op2); \
-	vm->CS[_CURR_INSTRUCTION_] = table __MOV_REG_REG__; \
 	_vm_mov_(vm, op1, op2); \
 	_CURR_INSTRUCTION_ += 4; \
 	if((READ_MOF) || (READ_COF) || (READ_ROF)) { \

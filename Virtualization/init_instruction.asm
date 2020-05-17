@@ -9,7 +9,6 @@ _vr9 macro vm_
 	mov eax, ebx
 	add eax, 40
 
-
 endm
 
 .data
@@ -36,13 +35,13 @@ _init_ops_ proc vm:ptr DWORD, op1:PTR DWORD, op2:PTR DWORD
 			mov byte ptr [edi], bl
 			mov dword ptr [edi + 1], 0ffffffffh
 			mov byte ptr [edi + 1], cl
-			mov ecx, [vm] 
-			mov ecx, [ecx + 8] 
-			push eax
-			push dx
-			invoke _pop_, [vm], ecx ; pop DS:0
-			pop dx
-			pop eax
+			;mov ecx, [vm] 
+			;mov ecx, [ecx + 8] 
+			;push eax
+			;push dx
+			;invoke _pop_, [vm], ecx ; pop DS:0
+			;pop dx
+			;pop eax
 		.elseif cx >= 0300h
 			mov bl, ch
 			mov byte ptr [edi], bl

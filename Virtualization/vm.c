@@ -40,7 +40,7 @@ uint32_t define_operand(vm_ptr vm, enum _types_ type, DWORD ex_type)
 	switch (type) 
 	{
 	case reg_:
-		_push_(vm, type); // при подготовке операндов к инструкции берем тип из вирт.стека
+		//_push_(vm, type); // при подготовке операндов к инструкции берем тип из вирт.стека
 		if (READ_MOF) { // код предыдущего операнда - память : 2 байта (тип, последний байт вирт. адреса)
 			vm->REG[r9] = (vm->REG[r9] << 16) | ((((type << 4) | ex_type) << 8) | 0xcd); // из r9 будем брать код операнда
 		}
@@ -111,15 +111,15 @@ void _vm_init_(vm_ptr vm)
 
 	vm->REG[SP] = 0;
 	vm->REG[IP] = 0;
-	vm->REG[r9] = vm->REG[SP];
+	vm->REG[r9] = 0;
 }
 
 DWORD _vm_destruct_(vm_ptr vm)
 {
-	free(vm->CS);
+	//free(vm->CS);
 	free(vm->DS);
 	free(vm->SS);
-	DWORD end_value = vm->REG[R0];
+	DWORD end_value = vm->REG[R1];
 	
 	for (int i = 0; i < r9; ++i)
 		vm->REG[i] = 0;

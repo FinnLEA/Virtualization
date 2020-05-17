@@ -126,10 +126,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Enigma.c" />
     <ClCompile Include="main.c" />
     <ClCompile Include="vm.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Enigma.h" />
+    <ClInclude Include="protect.h" />
+    <ClInclude Include="Types.h" />
     <ClInclude Include="vm.h" />
     <ClInclude Include="VMProtect.h" />
   </ItemGroup>
