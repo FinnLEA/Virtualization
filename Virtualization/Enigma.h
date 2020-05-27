@@ -31,7 +31,7 @@ typedef struct _encrypt_
 	ALPH rotor_3;
 	ALPH reflector;
 #if TESTMODE
-	PSTATE curr_state;
+	STATE curr_state;
 #endif
 
 } ENCRYPT, *PENCRYPT;
@@ -45,7 +45,7 @@ typedef struct _decrypt_
 	ALPH rotor_3;
 	ALPH reflector;
 #if TESTMODE
-	PSTATE curr_state;
+	STATE curr_state;
 #endif
 
 } DECRYPT, *PDECRYPT;
@@ -53,12 +53,19 @@ typedef struct _decrypt_
 typedef struct _cryptosysytem_
 {
 	//KEYS keys;
-	PENCRYPT enctypt;
+	ALPH alph;
+	PENCRYPT encrypt;
 	PDECRYPT decrypt;
 
 }CRYPTOSYSTEM, *PCRYPTOSYSTEM;
 
 //----------------------
 
-PCRYPTOSYSTEM init_crypto();
+#define GET_CURR_STATE(CryptoSystem, MachineType, Rotor)	\
+	CryptoSystem->MachineType->curr_state.Rotor
 
+//----------------------
+
+PCRYPTOSYSTEM init_crypto();
+BYTE Encrypt(PCRYPTOSYSTEM cs, BYTE value);
+BYTE Decrypt(PCRYPTOSYSTEM cs, BYTE value);
