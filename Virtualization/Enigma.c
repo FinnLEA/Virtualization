@@ -224,18 +224,22 @@ static BYTE IndexOf(ALPH rotor, BYTE find) {
 BYTE Encrypt(PCRYPTOSYSTEM cs, BYTE value) {
 	MoveEncryptRotors(cs);
 
+	BYTE res;
+
 	//BYTE r1 = cs->encrypt->rotor_1[mod16(cs->encrypt->curr_state.first + value)];
 	BYTE r1 = cs->encrypt->rotor_1[mod16(GET_CURR_STATE(cs, encrypt, first) + value)];
-	BYTE r2 = cs->encrypt->rotor_2[mod16(r1 + (GET_CURR_STATE(cs, encrypt, second) - GET_CURR_STATE(cs, encrypt, first)))];
-	BYTE r3 = cs->encrypt->rotor_3[mod16(r2 + (GET_CURR_STATE(cs, encrypt, third) - GET_CURR_STATE(cs, encrypt, second)))];
+	BYTE r2 = cs->encrypt->rotor_2[mod16(r1 + mod16((GET_CURR_STATE(cs, encrypt, second) - GET_CURR_STATE(cs, encrypt, first))))];
+	BYTE r3 = cs->encrypt->rotor_3[mod16(r2 + mod16((GET_CURR_STATE(cs, encrypt, third) - GET_CURR_STATE(cs, encrypt, second))))];
 
 	BYTE refl = cs->encrypt->reflector[mod16(r3 - GET_CURR_STATE(cs, encrypt, third))];
 	
 	r3 = cs->alph[IndexOf(cs->encrypt->rotor_3, mod16(refl + GET_CURR_STATE(cs, encrypt, third)))];
-	r2 = cs->alph[IndexOf(cs->encrypt->rotor_2, mod16(r3 - (GET_CURR_STATE(cs, encrypt, third) - GET_CURR_STATE(cs, encrypt, second))))];
-	r1 = cs->alph[IndexOf(cs->encrypt->rotor_1, mod16(r2 - GET_CURR_STATE(cs, encrypt, first)))];
+	r2 = cs->alph[IndexOf(cs->encrypt->rotor_2, mod16(r3 - mod16((GET_CURR_STATE(cs, encrypt, third) - GET_CURR_STATE(cs, encrypt, second)))))];
+	r1 = cs->alph[IndexOf(cs->encrypt->rotor_1, mod16(r2 - mod16((GET_CURR_STATE(cs, encrypt, second) - GET_CURR_STATE(cs, encrypt, first)))))];
 
-	return r1;
+	res = mod16(r1 - GET_CURR_STATE(cs, encrypt, first));
+
+	return res;
 }
 
 
@@ -270,9 +274,9 @@ BYTE Decrypt(PCRYPTOSYSTEM cs, BYTE value) {
 
 	r3 = cs->alph[IndexOf(cs->decrypt->rotor_3, mod16(refl + GET_CURR_STATE(cs, decrypt, third)))];
 	r2 = cs->alph[IndexOf(cs->decrypt->rotor_2, mod16(r3 - (GET_CURR_STATE(cs, decrypt, third) - GET_CURR_STATE(cs, decrypt, second))))];
-	r1 = cs->alph[IndexOf(cs->decrypt->rotor_1, mod16(r2 - GET_CURR_STATE(cs, decrypt, first)))];
+	r1 = cs->alph[IndexOf(cs->decrypt->rotor_1, mod16(r2 - mod16((GET_CURR_STATE(cs, decrypt, second) - GET_CURR_STATE(cs, decrypt, first)))))];
 
-	return r1;
+	BYTE res = mod16(r1 - GET_CURR_STATE(cs, encrypt, first));
 
-	return 0;
+	return res;
 }

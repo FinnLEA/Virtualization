@@ -46,7 +46,9 @@ int main() {
 	//foo();
 	PCRYPTOSYSTEM cs = init_crypto();
 	BYTE r = Encrypt(cs, 0x05);
-	BYTE d = Decrypt(cs, r);
+	BYTE d = Decrypt(cs, r); 
+	r = Encrypt(cs, 0x05);
+	d = Decrypt(cs, r);
 	BEGIN_PROTECT(_1_KBYTE, _256_BYTE);
 	{
 		DWORD res1;
