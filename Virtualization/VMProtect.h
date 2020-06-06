@@ -147,15 +147,73 @@
 	_DEFINE_FLAG_SIZE_DS_(limit_DS) \
 	_vm_init_(vm); \
 	OP* op1 = (OP*)malloc(sizeof(OP)); \
-	OP* op2 = (OP*)malloc(sizeof(OP)); 
-	//PCURROPTYPE type = (PCURROPTYPE)malloc(sizeof(CURROPTYPE));
+	OP* op2 = (OP*)malloc(sizeof(OP)); \
+	PCRYPTOSYSTEM cs = init_crypto();
 
 #define END_PROTECT(res)	\
 	res = _vm_destruct_(vm);
 
 
+#define DD	\
+	__asm ud2 \
+	__asm _emit 0x00 \
+	__asm _emit 0x01 \
+	__asm _emit 0x12 \
+	__asm _emit 0x13
+	
+	
+
+#define GET_OP_TYPE (op) \
+	((op >> 8) & 0x0f)
+
+DWORD init_opcode(vm_ptr vm, PCRYPTOSYSTEM cs)
+{
+	DWORD opcode = 0;
+	BYTE tmp = 0; 
+
+	// op 2
+	tmp = Encrypt(cs, ((vm->REG[r9] >> 8) & 0b1111)); 
+	tmp = (tmp << 4) | Encrypt(cs, (((vm->REG[r9] >> 8) & 0xF0) >> 4)); 
+	opcode |= tmp;
+
+	//op 1
+	tmp = Encrypt(cs, ((vm->REG[r9] >> 24) & 0b1111));
+	tmp = (tmp << 4) | Encrypt(cs, (((vm->REG[r9] >> 24) & 0xF0) >> 4));
+	opcode <<= 8;
+	opcode |= tmp;
+
+	// instr
+	tmp = Encrypt(cs, 0x01);
+	//tmp = (tmp << 4) | Encrypt(cs, (((vm->REG[r9] >> 8) & 0xF0) >> 4));
+	opcode <<= 8;
+	opcode |= tmp;
+
+	return opcode;
+}
+
+int Handler(EXCEPTION_POINTERS *pException) {
+	if (pException->ExceptionRecord->ExceptionCode == STATUS_ILLEGAL_INSTRUCTION) {
+		pException->ContextRecord->Eip += 0x06;
+		//pException->ContextRecord->Ecx = 1;
+		return EXCEPTION_CONTINUE_EXECUTION;
+	}
+	else {
+		return EXCEPTION_EXECUTE_HANDLER;
+	}
+}
+
+void SetInstruction() {
+	__try {
+		DD;
+	}
+	__except (Handler(GetExceptionInformation())) {
+		return 1;
+	}
+}
+
 #define VM_MOV(op_1, op_2)	\
 	op_1; op_2; \
+	init_opcode(vm, cs); \
 	_init_ops_(vm, op1, op2); \
 	_vm_mov_(vm, op1, op2); \
 	_CURR_INSTRUCTION_ += 4; \

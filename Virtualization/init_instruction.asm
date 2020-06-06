@@ -19,7 +19,9 @@ endm
 _push_	proto c :PTR DWORD, :DWORD
 _pop_	proto c :PTR DWORD, :PTR DWORD
 
-
+foo proc
+	
+foo endp
 
 _init_ops_ proc vm:ptr DWORD, op1:PTR DWORD, op2:PTR DWORD
 	
