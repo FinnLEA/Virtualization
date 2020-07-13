@@ -5,8 +5,9 @@
 #include <stdlib.h>
 #include <memory.h>
 
-#include "Enigma.h"
+#include "../Enigma/Enigma.h"
 #include "Types.h"
+
 
 
 //----------------------

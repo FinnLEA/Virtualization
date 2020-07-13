@@ -6,8 +6,12 @@
 
 #include "protect.h"
 
-#define GET_BYTE_EIP(pExc)	(BYTE)*((DWORD*)pExc->ContextRecord->Eip)
+#ifdef  _WIN64
+#define GET_BYTE_EIP(pExc)	(BYTE)*((DWORD*)pExc->ContextRecord->Rip)
+#else
 
+#define GET_BYTE_EIP(pExc)	(BYTE)*((DWORD*)pExc->ContextRecord->Eip)
+#endif //  _WIN64
 typedef void(*instrFunc)(void* pArg);
 
 instrFunc ParseInstructionOpcode(BYTE opcode, BYTE* opCount) {
@@ -39,38 +43,38 @@ instrFunc ParseInstructionOpcode(BYTE opcode, BYTE* opCount) {
 	case 0x09:
 		*opCount = 2;
 		return (instrFunc)_vm_div_;
-	case 0x0a:
-		*opCount = 1;
-		return (instrFunc)_vm_push_;
-	case 0x0b:
-		*opCount = 1;
-		return (instrFunc)_vm_pop_;
+	//case 0x0a:
+	//	*opCount = 1;
+	//	return (instrFunc)_vm_push_;
+	//case 0x0b:
+	//	*opCount = 1;
+	//	return (instrFunc)_vm_pop_;
 		
 	default:
 		return NULL;
 	}
 }
-
-int Handler(EXCEPTION_POINTERS *pException) {
-	if (pException->ExceptionRecord->ExceptionCode == STATUS_ILLEGAL_INSTRUCTION) {
-		pException->ContextRecord->Eip += 0x02;
-		BYTE currByte = (BYTE)*((DWORD*)pException->ContextRecord->Eip);
-		BYTE opCount = 0;
-		if (!currByte)
-			;
-		pException->ContextRecord->Eip += 0x01;
-		currByte = GET_BYTE_EIP(pException);
-		instrFunc pInstr = ParseInstructionOpcode(currByte);
-		
-		
-		pException->ContextRecord->Eip += 0x06;
-		//pException->ContextRecord->Ecx = 1;
-		return EXCEPTION_CONTINUE_EXECUTION;
-	}
-	else {
-		return EXCEPTION_EXECUTE_HANDLER;
-	}
-}
+//
+//int Handler(EXCEPTION_POINTERS *pException) {
+//	if (pException->ExceptionRecord->ExceptionCode == STATUS_ILLEGAL_INSTRUCTION) {
+//		pException->ContextRecord->Eip += 0x02;
+//		BYTE currByte = (BYTE)*((DWORD*)pException->ContextRecord->Eip);
+//		BYTE opCount = 0;
+//		if (!currByte)
+//			;
+//		pException->ContextRecord->Eip += 0x01;
+//		currByte = GET_BYTE_EIP(pException);
+//		// instrFunc pInstr = ParseInstructionOpcode(currByte);
+//		
+//		
+//		pException->ContextRecord->Eip += 0x06;
+//		//pException->ContextRecord->Ecx = 1;
+//		return EXCEPTION_CONTINUE_EXECUTION;
+//	}
+//	else {
+//		return EXCEPTION_EXECUTE_HANDLER;
+//	}
+//}
 
 int main() {
 
@@ -78,7 +82,7 @@ int main() {
 	// Seh
 
 	EXCEPTION_POINTERS *pException = NULL;
-	__try {
+	/*__try {
 		res = 1;
 		__asm {
 			__asm ud2
@@ -95,10 +99,10 @@ int main() {
 		printf("addr: %p\n", pException->ExceptionRecord->ExceptionAddress);
 		printf("code: %08X\n", pException->ExceptionRecord->ExceptionCode);
 		printf("flags: %08X\n", pException->ExceptionRecord->ExceptionFlags);
-	}
+	}*/
 
 	//foo();
-
+	PCRYPTOSYSTEM cs = init_crypto();
 	//
 	//BEGIN_PROTECT _1_KBYTE, _256_BYTE
 	//{
@@ -112,7 +116,7 @@ int main() {
 	//}
 	//END_PROTECT(res);
 
-	printf("%d\n", res);
+	//printf("%d\n", res);
 	system("pause");
 	return 0;
 }

@@ -1,15 +1,31 @@
 import re
 import sys
-import Enigma
+from Enigma import *
 
-class STATE:
-    def __init__(self, first = 0x00, second = 0x00, third = 0x00):
-        self.first = first
-        self.second = second
-        self.third = third
+from ctypes import *
+import struct
 
-    def brake(self):
-        return 'break'
+#enigmaModule = ctypes.CDLL('./Enigma/enigma32.dll')
+
+#class STATE(ctypes.Structure):
+#    _filed_ = [('first',    ctypes.c_char),
+#               ('second',   ctypes.c_char),
+#               ('third',    ctypes.c_char)]
+
+#class MACHINE(ctypes.Structure):
+#    _field_ = [('start_state',  ctypes.POINTER(STATE)),
+#               ('alph',         ctypes.POINTER(ctypes.c_char)),
+#               ('rotor_1',      ctypes.POINTER(ctypes.c_char)),
+#               ('rotor_2',      ctypes.POINTER(ctypes.c_char)),
+#               ('rotor_3',      ctypes.POINTER(ctypes.c_char))
+#               ('curr_state',   ctypes.Structure(STATE))]
+                
+
+
+#class CRYPTOSYSTEM(ctypes.Structure):
+#    _fields_ = [('alph',    ctypes.POINTER(ctypes.c_char)),
+#                ('encrypt', ctypes.POINTER(MACHINE)),
+#                ('decrypt', ctypes.POINTER(MACHINE))]
 
 #--------------------------------------
 
@@ -56,6 +72,8 @@ opcodes = {
 countOperands = 2
 szDefineOpsFunc = ''
 instructionPref = 0x00
+
+cs = None
 
 #--------------------------------------
 
@@ -115,6 +133,8 @@ def ParseInitVM(Buf:str):
     outBuf = '_BEGIN_PROTECT_' + '(' + arg1 + ',' + arg2 + ')\n'
     outBuf += '__try {\n'
 
+    cs = enigmaModule.init_crypto(None)
+    outBuf += '__asm _emit 0x' + str(0xb0)
     return outBuf
 
 def ParseEndVM(buf:str):
@@ -316,6 +336,11 @@ def ParseFile(nameFile):
 
 def main():
     #for file in sys.argv:
+ #  Enigma.enigmaModule.init_crypto()
+   # enigmaModule.Encrypt(POINTER(cs), c_ubyte('0')())
+   # enigmaModule.func()
+    
+    
     ParseFile("../Virtualization/main.c")
     return 0
     

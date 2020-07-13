@@ -41,6 +41,7 @@
 //		cs.keys.third = alf_for_keys[0] + rand() % alf_for_keys[15];
 //}
 
+
 static void generic_start_state(PCRYPTOSYSTEM cs)
 {
 	
@@ -60,6 +61,7 @@ static void generic_start_state(PCRYPTOSYSTEM cs)
 	 
 	return;
 }
+
 
 static void generate_rotor_value(ALPH rotor)
 {
@@ -88,6 +90,7 @@ static void generate_rotor_value(ALPH rotor)
 		--count_free_base;
 	}
 }
+
 
 static void init_rotors_table(PCRYPTOSYSTEM cs) 
 {
@@ -151,7 +154,7 @@ static void init_rotors_table(PCRYPTOSYSTEM cs)
 	return;
 }
 
-
+__declspec(dllexport)
 PCRYPTOSYSTEM init_crypto()
 {
 	srand(time(NULL));
@@ -161,9 +164,12 @@ PCRYPTOSYSTEM init_crypto()
 		0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
 	};
 
-	PCRYPTOSYSTEM cs = (PCRYPTOSYSTEM)malloc(sizeof(CRYPTOSYSTEM));
-	cs->encrypt	= (PENCRYPT)malloc(sizeof(ENCRYPT));
-	cs->decrypt	= (PDECRYPT)malloc(sizeof(DECRYPT));
+	PCRYPTOSYSTEM cs = NULL;
+	cs = realloc(cs, sizeof(CRYPTOSYSTEM));
+	
+	cs->encrypt	= (PMACHINE)malloc(sizeof(MACHINE));
+	cs->decrypt	= (PMACHINE)malloc(sizeof(MACHINE));
+	
 
 	cs->alph = (ALPH)malloc(sizeof(BYTE) * 16);
 	for (BYTE i = 0; i < 16; ++i)
@@ -174,9 +180,11 @@ PCRYPTOSYSTEM init_crypto()
 	/*cs->encrypt->curr_state = (PSTATE)malloc(sizeof(STATE));
 	cs->decrypt->curr_state = (PSTATE)malloc(sizeof(STATE));*/
 #if TESTMODE
-	cs->encrypt->curr_state.first	 = cs->decrypt->curr_state.first	= cs->encrypt->start_state->first;
-	cs->encrypt->curr_state.second	 = cs->decrypt->curr_state.second	= cs->encrypt->start_state->second;
-	cs->encrypt->curr_state.third	 = cs->decrypt->curr_state.third	= cs->encrypt->start_state->third;
+	cs->encrypt->curr_state = (PSTATE)malloc(sizeof(STATE));
+	cs->decrypt->curr_state = (PSTATE)malloc(sizeof(STATE));
+	cs->encrypt->curr_state->first	 = cs->decrypt->curr_state->first	= cs->encrypt->start_state->first;
+	cs->encrypt->curr_state->second	 = cs->decrypt->curr_state->second	= cs->encrypt->start_state->second;
+	cs->encrypt->curr_state->third	 = cs->decrypt->curr_state->third	= cs->encrypt->start_state->third;
 
 	//cs->decrypt->curr_state->first = cs->encrypt->start_state->first;
 	//cs->decrypt->curr_state->second = cs->encrypt->start_state->second;
@@ -221,6 +229,7 @@ static BYTE IndexOf(ALPH rotor, BYTE find) {
 	return 0;
 }
 
+__declspec(dllexport)
 BYTE Encrypt(PCRYPTOSYSTEM cs, BYTE value) {
 	MoveEncryptRotors(cs);
 
@@ -263,6 +272,7 @@ static void MoveDecryptRotors(PCRYPTOSYSTEM cs) {
 	return;
 }
 
+__declspec(dllexport)
 BYTE Decrypt(PCRYPTOSYSTEM cs, BYTE value) {
 	MoveDecryptRotors(cs);
 

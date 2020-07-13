@@ -166,30 +166,30 @@
 #define GET_OP_TYPE (op) \
 	((op >> 8) & 0x0f)
 
-DWORD init_opcode(vm_ptr vm, PCRYPTOSYSTEM cs)
-{
-	DWORD opcode = 0;
-	BYTE tmp = 0; 
-
-	// op 2
-	tmp = Encrypt(cs, ((vm->REG[r9] >> 8) & 0b1111)); 
-	tmp = (tmp << 4) | Encrypt(cs, (((vm->REG[r9] >> 8) & 0xF0) >> 4)); 
-	opcode |= tmp;
-
-	//op 1
-	tmp = Encrypt(cs, ((vm->REG[r9] >> 24) & 0b1111));
-	tmp = (tmp << 4) | Encrypt(cs, (((vm->REG[r9] >> 24) & 0xF0) >> 4));
-	opcode <<= 8;
-	opcode |= tmp;
-
-	// instr
-	tmp = Encrypt(cs, 0x01);
-	//tmp = (tmp << 4) | Encrypt(cs, (((vm->REG[r9] >> 8) & 0xF0) >> 4));
-	opcode <<= 8;
-	opcode |= tmp;
-
-	return opcode;
-}
+//DWORD init_opcode(vm_ptr vm, PCRYPTOSYSTEM cs)
+//{
+//	DWORD opcode = 0;
+//	BYTE tmp = 0; 
+//
+//	// op 2
+//	tmp = Encrypt(cs, ((vm->REG[r9] >> 8) & 0b1111)); 
+//	tmp = (tmp << 4) | Encrypt(cs, (((vm->REG[r9] >> 8) & 0xF0) >> 4)); 
+//	opcode |= tmp;
+//
+//	//op 1
+//	tmp = Encrypt(cs, ((vm->REG[r9] >> 24) & 0b1111));
+//	tmp = (tmp << 4) | Encrypt(cs, (((vm->REG[r9] >> 24) & 0xF0) >> 4));
+//	opcode <<= 8;
+//	opcode |= tmp;
+//
+//	// instr
+//	tmp = Encrypt(cs, 0x01);
+//	//tmp = (tmp << 4) | Encrypt(cs, (((vm->REG[r9] >> 8) & 0xF0) >> 4));
+//	opcode <<= 8;
+//	opcode |= tmp;
+//
+//	return opcode;
+//}
 
 // int Handler(EXCEPTION_POINTERS *pException) {
 // 	if (pException->ExceptionRecord->ExceptionCode == STATUS_ILLEGAL_INSTRUCTION) {

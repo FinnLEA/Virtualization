@@ -4,8 +4,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 15.0.28307.1000
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Virtualization", "Virtualization\Virtualization.vcxproj", "{C1BDC785-983C-4EFC-865E-1DB58ABBDBB5}"
+	ProjectSection(ProjectDependencies) = postProject
+		{D87B0A63-09EA-47E2-A055-99F000BFE688} = {D87B0A63-09EA-47E2-A055-99F000BFE688}
+	EndProjectSection
 EndProject
 Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "Preprocessing", "Preprocessing\Preprocessing.pyproj", "{3E638C04-BAB2-4A74-9035-D5984F7BCF74}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Enigma", "Enigma\Enigma.vcxproj", "{D87B0A63-09EA-47E2-A055-99F000BFE688}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +38,16 @@ Global
 		{3E638C04-BAB2-4A74-9035-D5984F7BCF74}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3E638C04-BAB2-4A74-9035-D5984F7BCF74}.Release|x64.ActiveCfg = Release|Any CPU
 		{3E638C04-BAB2-4A74-9035-D5984F7BCF74}.Release|x86.ActiveCfg = Release|Any CPU
+		{D87B0A63-09EA-47E2-A055-99F000BFE688}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{D87B0A63-09EA-47E2-A055-99F000BFE688}.Debug|x64.ActiveCfg = Debug|x64
+		{D87B0A63-09EA-47E2-A055-99F000BFE688}.Debug|x64.Build.0 = Debug|x64
+		{D87B0A63-09EA-47E2-A055-99F000BFE688}.Debug|x86.ActiveCfg = Debug|Win32
+		{D87B0A63-09EA-47E2-A055-99F000BFE688}.Debug|x86.Build.0 = Debug|Win32
+		{D87B0A63-09EA-47E2-A055-99F000BFE688}.Release|Any CPU.ActiveCfg = Release|Win32
+		{D87B0A63-09EA-47E2-A055-99F000BFE688}.Release|x64.ActiveCfg = Release|x64
+		{D87B0A63-09EA-47E2-A055-99F000BFE688}.Release|x64.Build.0 = Release|x64
+		{D87B0A63-09EA-47E2-A055-99F000BFE688}.Release|x86.ActiveCfg = Release|Win32
+		{D87B0A63-09EA-47E2-A055-99F000BFE688}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
