@@ -57,7 +57,7 @@ uint32_t define_operand(vm_ptr vm, enum _types_ type, DWORD ex_type)
 		WRITE_ROF(1);
 		break;
 
-	case imm_:
+	case constaddr_:
 		_push_(vm, ((BYTE)(type) + ex_type)); // при подготовке операндов к инструкции берем (значение - тип из второго байта)  
 		if (READ_MOF) {
 			vm->REG[r9] = (vm->REG[r9] << 16) | ((type << 8) + (ex_type & 0xff));
@@ -90,7 +90,22 @@ uint32_t define_operand(vm_ptr vm, enum _types_ type, DWORD ex_type)
 		}
 		WRITE_COF(1);
 		break;
-
+	case regaddr_:
+		if (READ_MOF) { // код предыдущего операнда - память : 2 байта (тип, последний байт вирт. адреса)
+			vm->REG[r9] = (vm->REG[r9] << 16) | ((((type << 4) | ex_type) << 8) | 0xcd); // из r9 будем брать код операнда
+		}
+		else if (READ_COF) { // аналогично
+			vm->REG[r9] = (vm->REG[r9] << 16) | ((((type << 4) | ex_type) << 8) | 0xcd);
+		}
+		else if (READ_ROF){ // код предыдущего операнда - регистр : 1-ый байт (4 ст.бита - тип операнда, 4 мл.бита - номер регистра), 2-й байт - мусор
+			vm->REG[r9] = (vm->REG[r9] << 16) | ((((type << 4) | ex_type) << 8) | 0xcd);
+		}
+		else { // первый операнд в интсрукции
+			vm->REG[r9] = ((((type << 4) | ex_type) << 8) | 0xcd);
+		}
+		// ставим бит регистра
+		WRITE_ROF(1);
+		break;
 	default:
 		break;
 	}
@@ -119,45 +134,118 @@ DWORD _vm_destruct_(vm_ptr vm)
 	//free(vm->CS);
 	free(vm->DS);
 	free(vm->SS);
-	DWORD end_value = vm->REG[R1];
+	//DWORD end_value = vm->REG[R1];
 	
 	for (int i = 0; i < r9; ++i)
 		vm->REG[i] = 0;
-	return end_value;
+	return 0;
 }
+
+DWORD GetValue(vm_ptr vm, OP* op){
+	DWORD value = 0;
+	
+	switch (op->type)
+	{	
+	case constaddr_:
+		value = *((DWORD*)((BYTE*)(vm->DS + op->value)));
+		break;
+
+	case regaddr_:
+		value = *(DWORD*)((BYTE*)(vm->DS + vm->REG[op->type & 0x0f]));
+		break;
+
+	case const_:
+		value = op->value;
+		break;
+
+	case reg_:
+		value = vm->REG[(op->type) & 0x0f];
+		break;
+
+	default:
+		value = 0;
+		//except
+		break;
+	}
+
+	return value;
+}
+
+// void SetValue(vm_ptr vm, OP* op, DWORD value){
+// 	switch (op1->type)
+// 	{
+// 	case constaddr_:
+// 		*((DWORD*)((BYTE*)(vm->DS + op1->value))) = value;
+// 		break;
+
+// 	case const_:
+// 		//except;
+// 		return;
+
+// 	case regaddr_:
+// 		*(DWORD*)((BYTE*)(vm->DS + vm->REG[op2->type & 0x0f])) = value;
+// 		break;
+
+// 	case reg_:
+// 		vm->REG[(op1->type) & 0x0f] = value;
+// 		break;
+// 	default:
+// 		//except
+// 		break;
+// 	}
+// }
 
 void _vm_mov_(vm_ptr vm, OP* op1, OP* op2)
 {
 	DWORD tmp;
-	switch (op2->type)
-	{	
-	case imm_:
-		tmp = *((DWORD*)((BYTE*)(vm->DS + op2->value)));
-		break;
+	// switch (op2->type)
+	// {	
+	// case constaddr_:
+	// 	tmp = *((DWORD*)((BYTE*)(vm->DS + op2->value)));
+	// 	break;
 
-	case const_:
-		tmp = op2->value;
-		break;
+	// case regaddr_:
+	// 	tmp = *(DWORD*)((BYTE*)(vm->DS + vm->REG[op2->type & 0x0f]));
+	// 	break;
 
-	default:
-		tmp = vm->REG[(op2->type) & 0x0f];
-		break;
-	}
+	// case const_:
+	// 	tmp = op2->value;
+	// 	break;
+
+	// case reg_:
+	// 	tmp = vm->REG[(op2->type) & 0x0f];
+	// 	break;
+
+	// default:
+	// 	tmp = 0;
+	// 	//except
+	// 	break;
+	// }
+
+	tmp = GetValue(vm, op2);
 
 	switch (op1->type)
 	{
-	case imm_:
+	case constaddr_:
 		*((DWORD*)((BYTE*)(vm->DS + op1->value))) = tmp;
 		break;
 
 	case const_:
+		//except;
 		return;
 
-	default:
+	case regaddr_:
+		*(DWORD*)((BYTE*)(vm->DS + vm->REG[op2->type & 0x0f])) = tmp;
+		break;
+
+	case reg_:
 		vm->REG[(op1->type) & 0x0f] = tmp;
 		break;
+	default:
+		//except
+		break;
 	}
-
+	
 }
 
 void _vm_add_(vm_ptr vm, OP * op1, OP * op2)
@@ -165,8 +253,12 @@ void _vm_add_(vm_ptr vm, OP * op1, OP * op2)
 	DWORD tmp;
 	switch (op2->type)
 	{
-	case imm_:
+	case constaddr_:
 		tmp = *((DWORD*)((BYTE*)(vm->DS + op2->value)));
+		break;
+
+	case regaddr_:
+		tmp = *(DWORD*)((BYTE*)(vm->DS + vm->REG[op2->type & 0x0f]));
 		break;
 
 	case const_:
@@ -180,7 +272,7 @@ void _vm_add_(vm_ptr vm, OP * op1, OP * op2)
 
 	switch (op1->type)
 	{
-	case imm_:
+	case constaddr_:
 		*((DWORD*)((BYTE*)(vm->DS + op1->value))) += tmp;
 		break;
 
@@ -198,8 +290,12 @@ void _vm_sub_(vm_ptr vm, OP * op1, OP * op2)
 	DWORD tmp;
 	switch (op2->type)
 	{
-	case imm_:
+	case constaddr_:
 		tmp = *((DWORD*)((BYTE*)(vm->DS + op2->value)));
+		break;
+
+	case regaddr_:
+		tmp = *(DWORD*)((BYTE*)(vm->DS + vm->REG[op2->type & 0x0f]));
 		break;
 
 	case const_:
@@ -213,7 +309,7 @@ void _vm_sub_(vm_ptr vm, OP * op1, OP * op2)
 
 	switch (op1->type)
 	{
-	case imm_:
+	case constaddr_:
 		*((DWORD*)((BYTE*)(vm->DS + op1->value))) -= tmp;
 		break;
 
@@ -231,8 +327,12 @@ void _vm_xor_(vm_ptr vm, OP * op1, OP * op2)
 	DWORD tmp;
 	switch (op2->type)
 	{
-	case imm_:
+	case constaddr_:
 		tmp = *((DWORD*)((BYTE*)(vm->DS + op2->value)));
+		break;
+
+	case regaddr_:
+		tmp = *(DWORD*)((BYTE*)(vm->DS + vm->REG[op2->type & 0x0f]));
 		break;
 
 	case const_:
@@ -246,7 +346,7 @@ void _vm_xor_(vm_ptr vm, OP * op1, OP * op2)
 
 	switch (op1->type)
 	{
-	case imm_:
+	case constaddr_:
 		*((DWORD*)((BYTE*)(vm->DS + op1->value))) ^= tmp;
 		break;
 
@@ -264,8 +364,12 @@ void _vm_and_(vm_ptr vm, OP * op1, OP * op2)
 	DWORD tmp;
 	switch (op2->type)
 	{
-	case imm_:
+	case constaddr_:
 		tmp = *((DWORD*)((BYTE*)(vm->DS + op2->value)));
+		break;
+
+	case regaddr_:
+		tmp = *(DWORD*)((BYTE*)(vm->DS + vm->REG[op2->type & 0x0f]));
 		break;
 
 	case const_:
@@ -279,7 +383,7 @@ void _vm_and_(vm_ptr vm, OP * op1, OP * op2)
 
 	switch (op1->type)
 	{
-	case imm_:
+	case constaddr_:
 		*((DWORD*)((BYTE*)(vm->DS + op1->value))) &= tmp;
 		break;
 
@@ -297,7 +401,7 @@ void _vm_or_(vm_ptr vm, OP * op1, OP * op2)
 	DWORD tmp;
 	switch (op2->type)
 	{
-	case imm_:
+	case constaddr_:
 		tmp = *((DWORD*)((BYTE*)(vm->DS + op2->value)));
 		break;
 
@@ -312,7 +416,7 @@ void _vm_or_(vm_ptr vm, OP * op1, OP * op2)
 
 	switch (op1->type)
 	{
-	case imm_:
+	case constaddr_:
 		*((DWORD*)((BYTE*)(vm->DS + op1->value))) |= tmp;
 		break;
 
@@ -323,4 +427,16 @@ void _vm_or_(vm_ptr vm, OP * op1, OP * op2)
 		vm->REG[(op1->type) & 0x0f] |= tmp;
 		break;
 	}
+}
+
+void _vm_call_(vm_ptr vm, DWORD addr) {
+	return;
+}
+
+void _vm_mul_(vm_ptr vm, OP* op1, OP* op2){
+	return;
+}
+
+void _vm_div_(vm_ptr vm, OP* op1, OP* op2){
+	return;
 }

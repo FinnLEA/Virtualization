@@ -42,7 +42,7 @@
 	// IMM(addr)
 
 #define IMM(addr)	\
-	define_operand(vm, imm_, addr) //в FLAGS бит ставить
+	define_operand(vm, constaddr_, addr) //в FLAGS бит ставить
 
 /* ex. [0x11223344]
 	v_sp <- (type + addr)					ex.: sp-> 0x11223346 
@@ -147,8 +147,8 @@
 	_DEFINE_FLAG_SIZE_DS_(limit_DS) \
 	_vm_init_(vm); \
 	OP* op1 = (OP*)malloc(sizeof(OP)); \
-	OP* op2 = (OP*)malloc(sizeof(OP)); \
-	PCRYPTOSYSTEM cs = init_crypto();
+	OP* op2 = (OP*)malloc(sizeof(OP)); 
+	//PCRYPTOSYSTEM cs = init_crypto();
 
 #define END_PROTECT(res)	\
 	res = _vm_destruct_(vm);
@@ -191,25 +191,25 @@ DWORD init_opcode(vm_ptr vm, PCRYPTOSYSTEM cs)
 	return opcode;
 }
 
-int Handler(EXCEPTION_POINTERS *pException) {
-	if (pException->ExceptionRecord->ExceptionCode == STATUS_ILLEGAL_INSTRUCTION) {
-		pException->ContextRecord->Eip += 0x06;
-		//pException->ContextRecord->Ecx = 1;
-		return EXCEPTION_CONTINUE_EXECUTION;
-	}
-	else {
-		return EXCEPTION_EXECUTE_HANDLER;
-	}
-}
+// int Handler(EXCEPTION_POINTERS *pException) {
+// 	if (pException->ExceptionRecord->ExceptionCode == STATUS_ILLEGAL_INSTRUCTION) {
+// 		pException->ContextRecord->Eip += 0x06;
+// 		//pException->ContextRecord->Ecx = 1;
+// 		return EXCEPTION_CONTINUE_EXECUTION;
+// 	}
+// 	else {
+// 		return EXCEPTION_EXECUTE_HANDLER;
+// 	}
+// }
 
-void SetInstruction() {
-	__try {
-		DD;
-	}
-	__except (Handler(GetExceptionInformation())) {
-		return 1;
-	}
-}
+// void SetInstruction() {
+// 	__try {
+// 		DD;
+// 	}
+// 	__except (Handler(GetExceptionInformation())) {
+// 		return 1;
+// 	}
+// }
 
 #define VM_MOV(op_1, op_2)	\
 	op_1; op_2; \

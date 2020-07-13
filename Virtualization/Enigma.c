@@ -57,7 +57,7 @@ static void generic_start_state(PCRYPTOSYSTEM cs)
 
 	cs->decrypt->start_state = start_state;
 	cs->encrypt->start_state = start_state;
-
+	 
 	return;
 }
 

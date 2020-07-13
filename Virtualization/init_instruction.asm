@@ -1,7 +1,7 @@
 .686
 .model flat, c
 
-; доступ к vm->r9
+; доступ к vm->r9 адрес в eax
 _vr9 macro vm_
 	
 	mov ebx, vm_

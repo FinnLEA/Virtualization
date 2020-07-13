@@ -41,8 +41,10 @@ typedef struct _OP_
 enum _types_
 {
 	reg_ = 0x01,
-	imm_,
-	const_
+	constaddr_,
+	const_,
+	regaddr_
+	
 };
 
 //----------------------
@@ -58,7 +60,7 @@ enum _types_
 #define IP		8
 #define	SP		9
 #define	r9		10
-																								// пока аналогично, но можно и больше(4 бита отведено (не больше 32 Кбайт)
+																								// пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ(4 пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ 32 пїЅпїЅпїЅпїЅпїЅ)
 #define FLAGS	0		/*										  | COF | MOF |	ROF | 	?	  |	DS     |size SS (0_0 - 128 byte, 0_1 - 256 bytes, 1_0 - 512 bytes, 1_1 - 1024 bytes)
 							_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ |  _  |  _  |  _  | _ _ _ _ |_ _ _ _ | _ _
 																
@@ -160,8 +162,10 @@ void _vm_sub_(vm_ptr vm, OP* op1, OP* op2);
 void _vm_xor_(vm_ptr vm, OP* op1, OP* op2);
 void _vm_and_(vm_ptr vm, OP* op1, OP* op2);
 void _vm_or_(vm_ptr vm, OP* op1, OP* op2);
-void _vm_push_(vm_ptr vm, OP* op);
+void _vm_push_(vm_ptr vm, OP* op1);
 void _vm_pop_(vm_ptr vm, OP* op);
-void _vm_call_(vm_ptr vm, DWORD addr);
+void _vm_call_(vm_ptr vm, OP* op);
+void _vm_mul_(vm_ptr vm, OP* op1, OP* op2);
+void _vm_div_(vm_ptr vm, OP* op1, OP* op2);
 
 
