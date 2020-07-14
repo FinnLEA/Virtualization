@@ -21,7 +21,7 @@
     <ClCompile Include="vm.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="..\Enigma\Enigma.c">
+    <ClCompile Include="Enigma.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
   </ItemGroup>
@@ -38,7 +38,7 @@
     <ClInclude Include="Types.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="..\Enigma\Enigma.h">
+    <ClInclude Include="Enigma.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>

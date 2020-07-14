@@ -76,8 +76,8 @@ typedef struct _cryptosysytem_
 __declspec(dllexport) PCRYPTOSYSTEM init_crypto();
 __declspec(dllexport) BYTE Encrypt(PCRYPTOSYSTEM cs, BYTE value);
 __declspec(dllexport) BYTE Decrypt(PCRYPTOSYSTEM cs, BYTE value);
-__declspec(dllexport) void CsSetStates(PCRYPTOSYSTEM cs, PSTATE startState);
-__declspec(dllexport) void CsSetRotors(PCRYPTOSYSTEM cs, ALPH rotor1, ALPH rotor2, ALPH rotor3);
+void CsSetStates(PCRYPTOSYSTEM cs, PSTATE startState);
+void CsSetRotors(PCRYPTOSYSTEM cs, ALPH rotor1, ALPH rotor2, ALPH rotor3);
 
 #ifdef	__cplusplus
 }

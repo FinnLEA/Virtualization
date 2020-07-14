@@ -5,7 +5,11 @@
 #include <stdlib.h>
 #include <memory.h>
 
+#ifdef _WIN64
 #include "../Enigma/Enigma.h"
+#else
+#include "Enigma.h"
+#endif
 #include "Types.h"
 
 
@@ -62,12 +66,13 @@ enum _types_
 #define	SP		9
 #define	r9		10
 																								// ���� ����������, �� ����� � ������(4 ���� �������� (�� ������ 32 �����)
-#define FLAGS	0		/*										  | COF | MOF |	ROF | 	?	  |	DS     |size SS (0_0 - 128 byte, 0_1 - 256 bytes, 1_0 - 512 bytes, 1_1 - 1024 bytes)
-							_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ |  _  |  _  |  _  | _ _ _ _ |_ _ _ _ | _ _
+#define FLAGS	0		/*										| EIF | COF | MOF |	ROF | 	?	  |	DS     |size SS (0_0 - 128 byte, 0_1 - 256 bytes, 1_0 - 512 bytes, 1_1 - 1024 bytes)
+							_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _	|  _  |  _  |  _  |  _  | _ _ _ _ |_ _ _ _ | _ _
 																
 															- MOF - memory operand flag (11)
 															- COF - const operand flag (12)
 															- ROF - register operand flag (10)
+															- EIF - Execute Instruction Flag (13)
 						*/
 
 #define ROR(val, step)		((val >> step) | (val << (32 - step)))
@@ -87,6 +92,11 @@ enum _types_
 #define FLAG_COF			(ROR(vm->REG[FLAGS], 12))
 #define READ_COF			(FLAG_COF & 0b1)
 #define WRITE_COF(bits)		(vm->REG[FLAGS] = ROL(((FLAG_COF & 0xfffffffe) | bits), 12))
+
+#define FLAG_EIF			(ROR(vm->REG[FLAGS], 13))
+#define READ_EIF			(FLAG_EIF & 0b1)
+#define WRITE_EIF(bits)		(vm->REG[FLAGS] = ROL(((FLAG_EIF & 0xfffffffe) | bits), 13))
+
 
 //----------------------
 #define _128_B_		0
@@ -113,6 +123,7 @@ typedef struct _VM_
 
 	uint32_t REG[11];
 
+	PCRYPTOSYSTEM cs;
 
 } vm_, *vm_ptr;
 
@@ -128,20 +139,24 @@ typedef struct _VM_
 		_MOV_OPCODE_, \
 		_ADD_OPCODE_ \
 	}
-		//{ 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00 }, \ 
-		//{ 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x01 }, \
-		//{ 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x02 }, \
-		//{ 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x03 }, \
-		//{ 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x01 }, \
-		//{ 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x02 }, \
-		//{ 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x03 }, \
-		//{ 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x01 }, \
-		//{ 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x02 }, \
-		//{ 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x03 }, \
-		//{ 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x01 }, \
-		//{ 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x02 }, \
-		//{ 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x03 } \
-	//}
+
+
+#define	COUNT_START_OPCODES		5
+extern BYTE startOpcodes[COUNT_START_OPCODES];
+
+/*	
+									^
+									|
+									|
+	Инструкция начала блока (pref opcode op1 op2 op3)
+	op ->	0x _ _
+      hight 4 bit - value start key; low 4 bit - index with rotors table |
+																		 V
+*/
+
+extern BYTE valuesForRotors[16][16];
+
+
 
 
 #define INTSR_COUNT	43
@@ -168,5 +183,5 @@ void _vm_pop_(vm_ptr vm, OP* op);
 void _vm_call_(vm_ptr vm, OP* op);
 void _vm_mul_(vm_ptr vm, OP* op1, OP* op2);
 void _vm_div_(vm_ptr vm, OP* op1, OP* op2);
-
+void _vm_init_cs_(vm_ptr vm, BYTE op1, BYTE op2, BYTE op3);
 

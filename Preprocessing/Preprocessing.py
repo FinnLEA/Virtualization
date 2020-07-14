@@ -2,30 +2,16 @@ import re
 import sys
 from Enigma import *
 
+from tables import *
+
 from ctypes import *
 import struct
 
-#enigmaModule = ctypes.CDLL('./Enigma/enigma32.dll')
-
-#class STATE(ctypes.Structure):
-#    _filed_ = [('first',    ctypes.c_char),
-#               ('second',   ctypes.c_char),
-#               ('third',    ctypes.c_char)]
-
-#class MACHINE(ctypes.Structure):
-#    _field_ = [('start_state',  ctypes.POINTER(STATE)),
-#               ('alph',         ctypes.POINTER(ctypes.c_char)),
-#               ('rotor_1',      ctypes.POINTER(ctypes.c_char)),
-#               ('rotor_2',      ctypes.POINTER(ctypes.c_char)),
-#               ('rotor_3',      ctypes.POINTER(ctypes.c_char))
-#               ('curr_state',   ctypes.Structure(STATE))]
-                
 
 
-#class CRYPTOSYSTEM(ctypes.Structure):
-#    _fields_ = [('alph',    ctypes.POINTER(ctypes.c_char)),
-#                ('encrypt', ctypes.POINTER(MACHINE)),
-#                ('decrypt', ctypes.POINTER(MACHINE))]
+base = [
+		0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
+	   ]
 
 #--------------------------------------
 
@@ -69,44 +55,43 @@ opcodes = {
             'POP'   : 0x0B
           }
 
+busyOpcodes = [0xbe, 0xac, 0x05, 0x4c, 0xb0]
+
 countOperands = 2
 szDefineOpsFunc = ''
-instructionPref = 0x00
+instructionPref = 0xe3 # standart pref for Enigma code
 
 cs = None
 
 #--------------------------------------
+#      Parse and insert instructions
 
-#
-#   Парсинг строки
-#
-# def ParseLine(str):
-#     r = 0xffab
-#     bytes = r.to_bytes(2, byteorder='big')
-#     res = bytes.hex()
+def EncryptOpcode(opcode:int):
+    opcode = enigmaModule.Encrypt(cs, ctypes.c_ubyte(opcode))
+    opcode <<= 4
+    opcode |= random.randint(0, 0x0f)
+    for val in busyOpcodes:
+        while val == opcode:
+            opcode |= random.randint(0, 0x0f)
 
-#     print(bytes)
-#     code = opcodes.get('mov', 0)
-#     tmp = re.findall(r'/*[r,R][0-9]', str)
-    
-#    #res = ''
-   
-#   # for match in tmp:
-#    #res = tmp.pop()
-         
-#     return res
-
+    return opcode
 
 def InsertOpcode(instrName:str):
     global countOperands
     if instrName == 'PUSH' or instrName == 'POP' or instrName == 'CALL':
         countOperands = 1
+    else:
+        countOperands = 2
         
     opcode = opcodes[instrName]
+    opcode = EncryptOpcode(opcode)
     outStr = '__asm _emit 0x'
     byte = opcode.to_bytes(1, byteorder='big')
     outStr += byte.hex() + '\n'
     return outStr
+
+#--------------------------------------
+#      Parse and insert preffix
 
 def InsertPref():
     byte = instructionPref.to_bytes(1, byteorder='big')
@@ -124,26 +109,73 @@ def FindInstruction(str, fdBuf):
             return True
     return False          
 
+#----------------------------------------
+#      Parse and insert start instruction
 
 def ParseInitVM(Buf:str):
+    global cs
     matches = re.findall(r'([_]{1}[0-9]{1,}[_][a-zA-Z]*)', Buf)
     arg1 = matches[0]
     arg2 = matches[1]
 
-    outBuf = '_BEGIN_PROTECT_' + '(' + arg1 + ',' + arg2 + ')\n'
+    outBuf = '_BEGIN_PROTECT_' + '(' + arg1 + ',' + arg2 + ')\n{'
     outBuf += '__try {\n'
-
+    outBuf += '__asm ud2\n'
+    outBuf += '__asm _emit 0x43\n'
+    
     cs = enigmaModule.init_crypto(None)
-    outBuf += '__asm _emit 0x' + str(0xb0)
+    
+
+    ind = random.randint(0, 4)
+    byte = busyOpcodes[ind].to_bytes(1, byteorder='big')
+
+    outBuf += '__asm _emit 0x' + byte.hex() + '\n'
+    dec = cs.contents.decrypt
+    #st = dec.contents.start_state.contents.first
+
+    byte1 = int(dec.contents.start_state.contents.first)
+    byte1 <<= 4
+    halfByte1 = random.randint(0, 0x0f)
+    byte1 |= halfByte1
+    byte = byte1.to_bytes(1, byteorder='big')
+    outBuf += '__asm _emit 0x' + byte.hex() + '\n'
+
+    byte2 = int(dec.contents.start_state.contents.second)
+    byte2 <<= 4
+    halfByte2 = random.randint(0, 0x0f)
+    while halfByte2 == (byte1 >> 4):
+        halfByte2 = random.randint(0, 0x0f)
+    byte2 |= halfByte2
+    byte = byte2.to_bytes(1, byteorder='big')
+    outBuf += '__asm _emit 0x' + byte.hex() + '\n'
+
+    byte3 = int(dec.contents.start_state.contents.third)
+    byte3 <<= 4
+    halfByte3 = random.randint(0, 0x0f)
+    while halfByte3 == (byte2 >> 4) and halfByte3 == (byte1 >> 4):
+        halfByte3 = random.randint(0, 0x0f)
+    byte3 |= halfByte3
+    byte = byte3.to_bytes(1, byteorder='big')
+    outBuf += '__asm _emit 0x' + byte.hex() + '\n'
+
+    enigmaModule.CsSetRotors(cs, ctypes.cast(valuesForRotors[halfByte1], ctypes.POINTER(ctypes.c_ubyte)),
+                             ctypes.cast(valuesForRotors[halfByte2], ctypes.POINTER(ctypes.c_ubyte)),
+                             ctypes.cast(valuesForRotors[halfByte3], ctypes.POINTER(ctypes.c_ubyte)))
+
     return outBuf
+
+#--------------------------------------
+#      Parse and insert end of VM block
 
 def ParseEndVM(buf:str):
     outBuf = '}\n__except(Handler(GetExceptionInformation())){\n'
-    outBuf += '_vm_destruct_(vm);\n}\n'
+    outBuf += '_vm_destruct_(vm);\n}\n}'
 
 
-    return buf
+    return outBuf
 
+#--------------------------------------
+#      Parse and insert operants
 
 def InsertOperandDefinition(szOp:str, type:int, isHex = False):
     outBuf = ''
@@ -273,6 +305,8 @@ def ParseOperands(buf:str):
 
     return outBuf
 
+#--------------------------------------
+#      Insert full instructions
 
 def InsertInstruction(buf:str):
     global szDefineOpsFunc
@@ -334,15 +368,36 @@ def ParseFile(nameFile):
         return
 
 
+
+def GenerateRotorValue():
+    valueArray = list()
+    
+    countFreeBase = 0x0f
+    global base
+    print('[', end =' ')
+    for val in range(16):
+        
+        num_el_array = random.randint(0, countFreeBase)
+        valueArray.append(base[num_el_array])
+
+        tmp = base[num_el_array]
+        base[num_el_array] = base[countFreeBase]
+        base[countFreeBase] = tmp
+
+        countFreeBase -= 1
+        
+        byte = valueArray[val]
+        byte = byte.to_bytes(1, 'big')
+        print('0x',byte.hex(),', ', sep = '', end='')
+    
+    print('],')
+    return
+
+
 def main():
-    #for file in sys.argv:
- #  Enigma.enigmaModule.init_crypto()
-   # enigmaModule.Encrypt(POINTER(cs), c_ubyte('0')())
-   # enigmaModule.func()
-    
-    
-    ParseFile("../Virtualization/main.c")
-    return 0
+    #for file in sys.argv:\
+   ParseFile("../Virtualization/main.c")
+   return 0
     
 
 

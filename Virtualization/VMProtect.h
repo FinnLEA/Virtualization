@@ -5,6 +5,14 @@
 
 #include "vm.h"
 
+#ifdef _WIN64
+#define Cip		Rip
+#define GET_BYTE_CIP(ContextRecord)	(BYTE)*((DWORD*)ContextRecord->Cip)
+#else
+#define Cip		Eip
+#define GET_BYTE_CIP(ContextRecord)	(BYTE)*((DWORD*)ContextRecord->Cip)
+#endif
+
 //----------------------
 #define r0		\
 	define_operand(vm, reg_, R0)
@@ -147,20 +155,14 @@
 	_DEFINE_FLAG_SIZE_DS_(limit_DS) \
 	_vm_init_(vm); \
 	OP* op1 = (OP*)malloc(sizeof(OP)); \
-	OP* op2 = (OP*)malloc(sizeof(OP)); 
-	//PCRYPTOSYSTEM cs = init_crypto();
+	OP* op2 = (OP*)malloc(sizeof(OP)); \
+	vm->cs = init_crypto();
+
+
 
 #define END_PROTECT(res)	\
 	res = _vm_destruct_(vm);
 
-
-#define DD	\
-	__asm ud2 \
-	__asm _emit 0x00 \
-	__asm _emit 0x01 \
-	__asm _emit 0x12 \
-	__asm _emit 0x13
-	
 	
 
 #define GET_OP_TYPE (op) \

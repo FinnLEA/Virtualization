@@ -42,35 +42,12 @@
 //}
 
 
-
-static BYTE mod16(BYTE value) {
-	return ((value % 16) + 16) % 16;
-}
-
-__declspec(dllexport)
-void CsSetStates(PCRYPTOSYSTEM cs, PSTATE startState) {
-	//cs->decrypt->start_state = cs->encrypt->start_state = (PSTATE)malloc(sizeof(STATE));
-
-	cs->decrypt->start_state = cs->encrypt->start_state = startState;
-
-	cs->encrypt->curr_state->first = cs->decrypt->curr_state->first = startState->first;
-	cs->encrypt->curr_state->second = cs->decrypt->curr_state->second = startState->second;
-	cs->encrypt->curr_state->third = cs->decrypt->curr_state->third = startState->third;
-}
-
-__declspec(dllexport)
-void CsSetRotors(PCRYPTOSYSTEM cs, ALPH rotor1, ALPH rotor2, ALPH rotor3) {
-	cs->decrypt->rotor_1 = cs->encrypt->rotor_1 = rotor1;
-	cs->decrypt->rotor_2 = cs->encrypt->rotor_2 = rotor2;
-	cs->decrypt->rotor_3 = cs->encrypt->rotor_3 = rotor3;
-}
-
 static void generic_start_state(PCRYPTOSYSTEM cs)
 {
 	
-	PSTATE start_state = (PSTATE)malloc(sizeof(STATE));
+	// PSTATE start_state = (PSTATE)malloc(sizeof(STATE));
 
-	start_state->first = cs->alph[0] + rand() % cs->alph[15];
+	/*start_state->first = cs->alph[0] + rand() % cs->alph[15];
 	start_state->second = cs->alph[0] + rand() % cs->alph[15];
 	while (start_state->first == start_state->second)
 		start_state->second = cs->alph[0] + rand() % cs->alph[15];
@@ -80,11 +57,31 @@ static void generic_start_state(PCRYPTOSYSTEM cs)
 		start_state->third = cs->alph[0] + rand() % cs->alph[15];
 
 	cs->decrypt->start_state = start_state;
-	cs->encrypt->start_state = start_state;
+	cs->encrypt->start_state = start_state;*/
 	 
 	return;
 }
 
+
+static BYTE mod16(BYTE value) {
+	return ((value % 16) + 16) % 16;
+}
+
+void CsSetStates(PCRYPTOSYSTEM cs, PSTATE startState) {
+	//cs->decrypt->start_state = cs->encrypt->start_state = (PSTATE)malloc(sizeof(STATE));
+	
+	cs->decrypt->start_state = cs->encrypt->start_state = startState;
+
+	cs->encrypt->curr_state->first = cs->decrypt->curr_state->first = startState->first;
+	cs->encrypt->curr_state->second = cs->decrypt->curr_state->second = startState->second;
+	cs->encrypt->curr_state->third = cs->decrypt->curr_state->third = startState->third;
+}
+
+void CsSetRotors(PCRYPTOSYSTEM cs, ALPH rotor1, ALPH rotor2, ALPH rotor3) {
+	cs->decrypt->rotor_1 = cs->encrypt->rotor_1 = rotor1;
+	cs->decrypt->rotor_2 = cs->encrypt->rotor_2 = rotor2;
+	cs->decrypt->rotor_3 = cs->encrypt->rotor_3 = rotor3;
+}
 
 static void generate_rotor_value(ALPH rotor)
 {
@@ -154,24 +151,24 @@ static void init_rotors_table(PCRYPTOSYSTEM cs)
 
 #else
 	
-	//ALPH r1		= (ALPH)malloc(sizeof(BYTE) * 17);
-	//ALPH r2		= (ALPH)malloc(sizeof(BYTE) * 17);
-	//ALPH r3		= (ALPH)malloc(sizeof(BYTE) * 17);
-	////ALPH refl	= (ALPH)malloc(sizeof(BYTE) * 16);
-
-	//generate_rotor_value(alf_for_base, r1);
-	//generate_rotor_value(alf_for_base, r2);
-	//generate_rotor_value(alf_for_base, r3);
-
-	//r1[0] = cs->encrypt->start_state->first;
-	//r2[0] = cs->encrypt->start_state->second;
-	//r3[0] = cs->encrypt->start_state->third;
-
-	//cs->encrypt->rotor_1	= cs->decrypt->rotor_1 = r1;
-	//cs->encrypt->rotor_2	= cs->decrypt->rotor_2 = r2;
-	//cs->encrypt->rotor_3	= cs->decrypt->rotor_3 = r3;
-	//cs->encrypt->reflector	= cs->decrypt->reflector = &refl;
-
+//	ALPH r1		= (ALPH)malloc(sizeof(BYTE) * 17);
+//	ALPH r2		= (ALPH)malloc(sizeof(BYTE) * 17);
+//	ALPH r3		= (ALPH)malloc(sizeof(BYTE) * 17);
+//	//ALPH refl	= (ALPH)malloc(sizeof(BYTE) * 16);
+//
+//	generate_rotor_value(alf_for_base, r1);
+//	generate_rotor_value(alf_for_base, r2);
+//	generate_rotor_value(alf_for_base, r3);
+//
+//	r1[0] = cs->encrypt->start_state->first;
+//	r2[0] = cs->encrypt->start_state->second;
+//	r3[0] = cs->encrypt->start_state->third;
+//
+//	cs->encrypt->rotor_1	= cs->decrypt->rotor_1 = r1;
+//	cs->encrypt->rotor_2	= cs->decrypt->rotor_2 = r2;
+//	cs->encrypt->rotor_3	= cs->decrypt->rotor_3 = r3;
+//	cs->encrypt->reflector	= cs->decrypt->reflector = &refl;
+//
 #endif // TESTMODE
 
 	return;
@@ -198,16 +195,16 @@ PCRYPTOSYSTEM init_crypto()
 	for (BYTE i = 0; i < 16; ++i)
 		cs->alph[i] = i;
 
-	generic_start_state(cs);
+	//generic_start_state(cs);
 
 	/*cs->encrypt->curr_state = (PSTATE)malloc(sizeof(STATE));
 	cs->decrypt->curr_state = (PSTATE)malloc(sizeof(STATE));*/
 #if TESTMODE
 	cs->encrypt->curr_state = (PSTATE)malloc(sizeof(STATE));
 	cs->decrypt->curr_state = (PSTATE)malloc(sizeof(STATE));
-	cs->encrypt->curr_state->first	 = cs->decrypt->curr_state->first	= cs->encrypt->start_state->first;
+	/*cs->encrypt->curr_state->first	 = cs->decrypt->curr_state->first	= cs->encrypt->start_state->first;
 	cs->encrypt->curr_state->second	 = cs->decrypt->curr_state->second	= cs->encrypt->start_state->second;
-	cs->encrypt->curr_state->third	 = cs->decrypt->curr_state->third	= cs->encrypt->start_state->third;
+	cs->encrypt->curr_state->third	 = cs->decrypt->curr_state->third	= cs->encrypt->start_state->third;*/
 
 	//cs->decrypt->curr_state->first = cs->encrypt->start_state->first;
 	//cs->decrypt->curr_state->second = cs->encrypt->start_state->second;
@@ -216,6 +213,7 @@ PCRYPTOSYSTEM init_crypto()
 #endif // TESTMODE
 
 	init_rotors_table(cs);
+
 
 	return cs;
 }
