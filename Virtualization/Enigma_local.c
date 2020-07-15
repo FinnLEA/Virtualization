@@ -45,20 +45,20 @@
 static void generic_start_state(PCRYPTOSYSTEM cs)
 {
 	
-	// PSTATE start_state = (PSTATE)malloc(sizeof(STATE));
+	 PSTATE start_state = (PSTATE)malloc(sizeof(STATE));
 
-	/*start_state->first = cs->alph[0] + rand() % cs->alph[15];
-	start_state->second = cs->alph[0] + rand() % cs->alph[15];
-	while (start_state->first == start_state->second)
-		start_state->second = cs->alph[0] + rand() % cs->alph[15];
+	//start_state->first = cs->alph[0] + rand() % cs->alph[15];
+	//start_state->second = cs->alph[0] + rand() % cs->alph[15];
+	//while (start_state->first == start_state->second)
+	//	start_state->second = cs->alph[0] + rand() % cs->alph[15];
 
-	start_state->third = cs->alph[0] + rand() % cs->alph[15];
-	while (start_state->third == start_state->second || start_state->third == start_state->first)
-		start_state->third = cs->alph[0] + rand() % cs->alph[15];
+	//start_state->third = cs->alph[0] + rand() % cs->alph[15];
+	//while (start_state->third == start_state->second || start_state->third == start_state->first)
+	//	start_state->third = cs->alph[0] + rand() % cs->alph[15];
 
-	cs->decrypt->start_state = start_state;
-	cs->encrypt->start_state = start_state;*/
-	 
+	//cs->decrypt->start_state = start_state;
+	//cs->encrypt->start_state = start_state;
+	// 
 	return;
 }
 
@@ -72,9 +72,9 @@ void CsSetStates(PCRYPTOSYSTEM cs, PSTATE startState) {
 	
 	cs->decrypt->start_state = cs->encrypt->start_state = startState;
 
-	cs->encrypt->curr_state->first = cs->decrypt->curr_state->first = startState->first;
-	cs->encrypt->curr_state->second = cs->decrypt->curr_state->second = startState->second;
-	cs->encrypt->curr_state->third = cs->decrypt->curr_state->third = startState->third;
+	cs->encrypt->curr_state->first	= cs->decrypt->curr_state->first	= startState->first;
+	cs->encrypt->curr_state->second = cs->decrypt->curr_state->second	= startState->second;
+	cs->encrypt->curr_state->third	= cs->decrypt->curr_state->third	= startState->third;
 }
 
 void CsSetRotors(PCRYPTOSYSTEM cs, ALPH rotor1, ALPH rotor2, ALPH rotor3) {
@@ -174,7 +174,7 @@ static void init_rotors_table(PCRYPTOSYSTEM cs)
 	return;
 }
 
-__declspec(dllexport)
+
 PCRYPTOSYSTEM init_crypto()
 {
 	srand(time(NULL));
@@ -195,16 +195,16 @@ PCRYPTOSYSTEM init_crypto()
 	for (BYTE i = 0; i < 16; ++i)
 		cs->alph[i] = i;
 
-	//generic_start_state(cs);
+	generic_start_state(cs);
 
 	/*cs->encrypt->curr_state = (PSTATE)malloc(sizeof(STATE));
 	cs->decrypt->curr_state = (PSTATE)malloc(sizeof(STATE));*/
 #if TESTMODE
 	cs->encrypt->curr_state = (PSTATE)malloc(sizeof(STATE));
 	cs->decrypt->curr_state = (PSTATE)malloc(sizeof(STATE));
-	/*cs->encrypt->curr_state->first	 = cs->decrypt->curr_state->first	= cs->encrypt->start_state->first;
-	cs->encrypt->curr_state->second	 = cs->decrypt->curr_state->second	= cs->encrypt->start_state->second;
-	cs->encrypt->curr_state->third	 = cs->decrypt->curr_state->third	= cs->encrypt->start_state->third;*/
+	//cs->encrypt->curr_state->first	 = cs->decrypt->curr_state->first	= cs->encrypt->start_state->first;
+	//cs->encrypt->curr_state->second	 = cs->decrypt->curr_state->second	= cs->encrypt->start_state->second;
+	//cs->encrypt->curr_state->third	 = cs->decrypt->curr_state->third	= cs->encrypt->start_state->third;
 
 	//cs->decrypt->curr_state->first = cs->encrypt->start_state->first;
 	//cs->decrypt->curr_state->second = cs->encrypt->start_state->second;
@@ -247,7 +247,7 @@ static BYTE IndexOf(ALPH rotor, BYTE find) {
 	return 0;
 }
 
-__declspec(dllexport)
+
 BYTE Encrypt(PCRYPTOSYSTEM cs, BYTE value) {
 	MoveEncryptRotors(cs);
 
@@ -290,7 +290,7 @@ static void MoveDecryptRotors(PCRYPTOSYSTEM cs) {
 	return;
 }
 
-__declspec(dllexport)
+
 BYTE Decrypt(PCRYPTOSYSTEM cs, BYTE value) {
 	MoveDecryptRotors(cs);
 
@@ -304,7 +304,7 @@ BYTE Decrypt(PCRYPTOSYSTEM cs, BYTE value) {
 	r2 = cs->alph[IndexOf(cs->decrypt->rotor_2, mod16(r3 - (GET_CURR_STATE(cs, decrypt, third) - GET_CURR_STATE(cs, decrypt, second))))];
 	r1 = cs->alph[IndexOf(cs->decrypt->rotor_1, mod16(r2 - mod16((GET_CURR_STATE(cs, decrypt, second) - GET_CURR_STATE(cs, decrypt, first)))))];
 
-	BYTE res = mod16(r1 - GET_CURR_STATE(cs, encrypt, first));
+	BYTE res = mod16(r1 - GET_CURR_STATE(cs, decrypt, first));
 
 	return res;
 }

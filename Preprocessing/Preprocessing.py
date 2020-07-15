@@ -109,8 +109,17 @@ def FindInstruction(str, fdBuf):
             return True
     return False          
 
+
 #----------------------------------------
 #      Parse and insert start instruction
+
+def CopyState(machine:POINTER(MACHINE)):
+    machine.contents.curr_state.contents.first = machine.contents.start_state.contents.first
+    machine.contents.curr_state.contents.second = machine.contents.start_state.contents.second
+    machine.contents.curr_state.contents.third = machine.contents.start_state.contents.third
+
+    return
+
 
 def ParseInitVM(Buf:str):
     global cs
@@ -124,13 +133,13 @@ def ParseInitVM(Buf:str):
     outBuf += '__asm _emit 0x43\n'
     
     cs = enigmaModule.init_crypto(None)
+    CopyState(cs.contents.encrypt)
     
-
     ind = random.randint(0, 4)
     byte = busyOpcodes[ind].to_bytes(1, byteorder='big')
 
     outBuf += '__asm _emit 0x' + byte.hex() + '\n'
-    dec = cs.contents.decrypt
+    dec = cs.contents.encrypt
     #st = dec.contents.start_state.contents.first
 
     byte1 = int(dec.contents.start_state.contents.first)
@@ -314,7 +323,7 @@ def InsertInstruction(buf:str):
     outBuf = ''
     instruction = re.findall(r'/*(vm|VM)[_]{1}([A-Za-z]{2,})', buf)
    # i = len(instruction)
-    spl = buf.rsplit('VM_', 1)
+    #spl = buf.rsplit('VM_', 1)
   #  while i != 0:
     tmp = instruction[0]
     if tmp[0] == 'VM':

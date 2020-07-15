@@ -148,82 +148,33 @@ void func(int a, int b, int* c) {
 
 int main() {
 
-	DWORD res = 0;
-_BEGIN_PROTECT_(_1_KBYTE,_256_BYTE)
-{__try {
-__asm ud2
-__asm _emit 0x43
-__asm _emit 0x05
-__asm _emit 0x9c
-__asm _emit 0x6e
-__asm _emit 0x25
-	{
-		__try {
-			
-		}
-		__except (Handler(GetExceptionInformation(), vm)) {
-		}
-		vm = 0;
-	}
 
-	/*PCRYPTOSYSTEM cs = init_crypto();
-	BYTE res = Encrypt(cs, 0);
-	res = Decrypt(cs, res);*/
 	
 	_BEGIN_PROTECT_(_1_KBYTE, _256_BYTE)
 	{
 		__try {
 			__asm ud2
 			__asm _emit 0x43
-			__asm _emit 0x4c
-			__asm _emit 0x99
-			__asm _emit 0x60
-			__asm _emit 0x21
+			__asm _emit 0xbe
+			__asm _emit 0x49
+			__asm _emit 0x87
+			__asm _emit 0x5b
 			{
 				define_operand(vm, 1, 1);
 				define_operand(vm, 4, 2);
 				__asm ud2
 				__asm _emit 0xe3
-				__asm _emit 0x9e
+				__asm _emit 0x46
 				__asm _emit 0x11
 				__asm _emit 0x42
 				define_operand(vm, 2, 0x00000004);
 				define_operand(vm, 3, 0xffffffff);
 				__asm ud2
 				__asm _emit 0xe3
-				__asm _emit 0xe8
+				__asm _emit 0x46
 				__asm _emit 0x02
 				__asm _emit 0x04
 				__asm _emit 0x03
-				define_operand(vm, 1, 1);
-				define_operand(vm, 2, 0x4);
-				__asm ud2
-				__asm _emit 0xe3
-				__asm _emit 0xb4
-				__asm _emit 0x11
-				__asm _emit 0x02
-				__asm _emit 0x04
-				define_operand(vm, 1, 1);
-				define_operand(vm, 3, 0x2);
-				__asm ud2
-				__asm _emit 0xe3
-				__asm _emit 0x33
-				__asm _emit 0x11
-				__asm _emit 0x03
-				define_operand(vm, 1, 1);
-				define_operand(vm, 3, 0x10);
-				__asm ud2
-				__asm _emit 0xe3
-				__asm _emit 0x50
-				__asm _emit 0x11
-				__asm _emit 0x03
-				define_operand(vm, 1, 2);
-				define_operand(vm, 1, 1);
-				__asm ud2
-				__asm _emit 0xe3
-				__asm _emit 0x3b
-				__asm _emit 0x12
-				__asm _emit 0x11
 			}
 		}
 		__except (Handler(GetExceptionInformation())) {

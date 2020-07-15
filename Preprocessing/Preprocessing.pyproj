@@ -23,6 +23,7 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Preprocessing.py" />
     <Compile Include="tables.py">
       <SubType>Code</SubType>
     </Compile>

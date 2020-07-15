@@ -184,84 +184,61 @@ void func(int a, int b, int* c) {
 
 int main() {
 
-	DWORD res = 0;
-	// Seh
+	//DWORD res = 0;
+
 	_BEGIN_PROTECT_(_1_KBYTE, _256_BYTE)
 	{
 		__try {
 			__asm ud2
 			__asm _emit 0x43
-			__asm _emit 0x4c
-			__asm _emit 0x99
-			__asm _emit 0x60
-			__asm _emit 0x21
+			__asm _emit 0xbe
+			__asm _emit 0x49
+			__asm _emit 0x87
+			__asm _emit 0x5b
 			{
 				define_operand(vm, 1, 1);
 				define_operand(vm, 4, 2);
 				__asm ud2
 				__asm _emit 0xe3
-				__asm _emit 0x9e
+				__asm _emit 0x46
 				__asm _emit 0x11
 				__asm _emit 0x42
 				define_operand(vm, 2, 0x00000004);
 				define_operand(vm, 3, 0xffffffff);
 				__asm ud2
 				__asm _emit 0xe3
-				__asm _emit 0xe8
+				__asm _emit 0x46
 				__asm _emit 0x02
 				__asm _emit 0x04
 				__asm _emit 0x03
-				define_operand(vm, 1, 1);
-				define_operand(vm, 2, 0x4);
-				__asm ud2
-				__asm _emit 0xe3
-				__asm _emit 0xb4
-				__asm _emit 0x11
-				__asm _emit 0x02
-				__asm _emit 0x04
-				define_operand(vm, 1, 1);
-				define_operand(vm, 3, 0x2);
-				__asm ud2
-				__asm _emit 0xe3
-				__asm _emit 0x33
-				__asm _emit 0x11
-				__asm _emit 0x03
-				define_operand(vm, 1, 1);
-				define_operand(vm, 3, 0x10);
-				__asm ud2
-				__asm _emit 0xe3
-				__asm _emit 0x50
-				__asm _emit 0x11
-				__asm _emit 0x03
-				define_operand(vm, 1, 2);
-				define_operand(vm, 1, 1);
-				__asm ud2
-				__asm _emit 0xe3
-				__asm _emit 0x3b
-				__asm _emit 0x12
-				__asm _emit 0x11
 			}
-			
 		}
 		__except (Handler(GetExceptionInformation(), vm)) {
-			//_vm_destruct_(vm);
+			_vm_destruct_(vm);
 		}
 		vm = 0;
 	}
 
-	//foo();
-	/*PCRYPTOSYSTEM cs = init_crypto();
-	BYTE res = Encrypt(cs, 0);
-	res = Decrypt(cs, res);*/
+	PCRYPTOSYSTEM cs = init_crypto();
+	CsSetRotors(cs, valuesForRotors[9], valuesForRotors[7], valuesForRotors[0x0b]);
+	PSTATE State = (PSTATE)malloc(sizeof(STATE));
+
+	State->first = 0x04;
+	State->second = 0x08;
+	State->third = 0x05;
+
+	CsSetStates(cs, State);
+	BYTE res = Encrypt(cs, 1);
+	res = Decrypt(cs, res);
 	
 	//BEGIN_PROTECT _1_KBYTE, _256_BYTE
 	//{
 	//	VM_MOV r0, [r1];
 	//	VM_MOV [0x00000004], ffffffff
-	//	VM_MOV r0, [4]
-	//	VM_ADD r0, 2
-	//	VM_OR r0, 0x10
-	//	VM_MOV r1, r0
+	//	//VM_MOV r0, [4]
+	//	//VM_ADD r0, 2
+	//	//VM_OR r0, 0x10
+	//	//VM_MOV r1, r0
 	//}
 	//END_PROTECT(res);
 

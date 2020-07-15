@@ -21,7 +21,7 @@
     <ClCompile Include="vm.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="Enigma.c">
+    <ClCompile Include="Enigma_local.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
   </ItemGroup>

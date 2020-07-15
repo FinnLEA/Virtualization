@@ -53,9 +53,9 @@ void CsSetStates(PCRYPTOSYSTEM cs, PSTATE startState) {
 
 	cs->decrypt->start_state = cs->encrypt->start_state = startState;
 
-	cs->encrypt->curr_state->first = cs->decrypt->curr_state->first = startState->first;
-	cs->encrypt->curr_state->second = cs->decrypt->curr_state->second = startState->second;
-	cs->encrypt->curr_state->third = cs->decrypt->curr_state->third = startState->third;
+	cs->encrypt->curr_state->first		= cs->decrypt->curr_state->first	= startState->first;
+	cs->encrypt->curr_state->second		= cs->decrypt->curr_state->second	= startState->second;
+	cs->encrypt->curr_state->third		= cs->decrypt->curr_state->third	= startState->third;
 }
 
 __declspec(dllexport)
@@ -306,7 +306,7 @@ BYTE Decrypt(PCRYPTOSYSTEM cs, BYTE value) {
 	r2 = cs->alph[IndexOf(cs->decrypt->rotor_2, mod16(r3 - (GET_CURR_STATE(cs, decrypt, third) - GET_CURR_STATE(cs, decrypt, second))))];
 	r1 = cs->alph[IndexOf(cs->decrypt->rotor_1, mod16(r2 - mod16((GET_CURR_STATE(cs, decrypt, second) - GET_CURR_STATE(cs, decrypt, first)))))];
 
-	BYTE res = mod16(r1 - GET_CURR_STATE(cs, encrypt, first));
+	BYTE res = mod16(r1 - GET_CURR_STATE(cs, decrypt, first));
 
 	return res;
 }
