@@ -63,11 +63,49 @@ instructionPref = 0xe3 # standart pref for Enigma code
 
 cs = None
 
+
+
+def mod16(value:c_ubyte) -> c_ubyte:
+    return ((value % 16) + 16) % 16
+
+def MoveRotor_1(state:POINTER(STATE)) -> c_ubyte:
+    state.contents.first += 1
+    state.contents.first = mod16(state.contents.first)
+    return state.contents.first
+
+def MoveRotor_2(state:POINTER(STATE)) -> c_ubyte:
+    state.contents.second += 1
+    state.contents.second = mod16(state.contents.second)
+    return state.contents.second
+
+def MoveRotor_3(state:POINTER(STATE)) -> c_ubyte:
+    state.contents.third += 1
+    return mod16(state.contents.third)
+
+def MoveEncryptRotors(cs:POINTER(CRYPTOSYSTEM)):
+    
+    curr_st = cs.contents.encrypt.contents.curr_state
+    if MoveRotor_1(curr_st) == 0:
+        if MoveRotor_2(curr_st) == 0:
+            if MoveRotor_3(curr_st) == 0:
+                return
+    
+    return
+
+def EncryptByte(byte:int) -> int:
+    global cs
+    byte = enigmaModule.Encrypt(cs, c_ubyte(byte))
+   #enigmaModule.MoveEncryptRotors(cs)
+    MoveEncryptRotors(cs)
+    return byte
+
+
 #--------------------------------------
 #      Parse and insert instructions
 
-def EncryptOpcode(opcode:int):
-    opcode = enigmaModule.Encrypt(cs, ctypes.c_ubyte(opcode))
+def EncryptOpcode(opcode:int) -> int:
+
+    opcode = EncryptByte(opcode)
     opcode <<= 4
     opcode |= random.randint(0, 0x0f)
     for val in busyOpcodes:
@@ -76,7 +114,7 @@ def EncryptOpcode(opcode:int):
 
     return opcode
 
-def InsertOpcode(instrName:str):
+def InsertOpcode(instrName:str) -> str:
     global countOperands
     if instrName == 'PUSH' or instrName == 'POP' or instrName == 'CALL':
         countOperands = 1
@@ -189,9 +227,15 @@ def ParseEndVM(buf:str):
 def InsertOperandDefinition(szOp:str, type:int, isHex = False):
     outBuf = ''
     if type == optypes['reg'] or type == optypes['regaddr']:
-        outBuf += 'define_operand(vm,' + str(type) + ',' + str(int(szOp) + 1) + ');\n'
+        #outBuf += 'define_operand(vm,' + str(type) + ',' + str(int(szOp) + 1) + ');\n'
+        return outBuf
     else:
-        outBuf += 'define_operand(vm,' + str(type) + ','
+        #outBuf += 'define_operand(vm,' + str(type) + ','
+        #if hex:
+        #    outBuf += '0x' + szOp + ');\n'
+        #else:
+        #    outBuf += szOp + ');\n'
+        outBuf += '_push_(vm,'
         if hex:
             outBuf += '0x' + szOp + ');\n'
         else:
@@ -199,6 +243,13 @@ def InsertOperandDefinition(szOp:str, type:int, isHex = False):
 
     return outBuf
     
+
+def EncryptOperandType(byte:int) -> int:
+    byte = EncryptByte(byte)
+    #byte <<= 4
+    #byte |= random.randint(0, 0x0f)
+
+    return byte
 
 def InsertOptype(buf:str):
     out = ''
@@ -210,6 +261,7 @@ def InsertOptype(buf:str):
         tmp = int(tmp)
         tmp += 1
         szDefineOpsFunc += InsertOperandDefinition(op[0], type)
+        type = EncryptOperandType(type)
         type <<= 4
         type |= tmp
         byte = type.to_bytes(1, 'big')
@@ -224,6 +276,7 @@ def InsertOptype(buf:str):
         tmp = int(tmp)
         tmp += 1
         szDefineOpsFunc += InsertOperandDefinition(op[0], type)
+        type = EncryptOperandType(type)
         type <<= 4
         type |= tmp
         byte = type.to_bytes(1, 'big')
@@ -234,7 +287,9 @@ def InsertOptype(buf:str):
     op = re.findall(r'\[0x([a-fA-F0-9]+)\]', buf)
     if len(op) != 0:
         type = optypes['constaddr']
+        type = EncryptOperandType(type)
         byte1 = type.to_bytes(1, 'big')
+        
         out += '__asm _emit 0x'
         out += byte1.hex() + '\n'
         value = op[0]
@@ -254,7 +309,9 @@ def InsertOptype(buf:str):
     op = re.findall(r'\[([a-fA-F0-9]+)\]', buf)
     if len(op) != 0:
         type = optypes['constaddr']
+        type = EncryptOperandType(type)
         byte1 = type.to_bytes(1, 'big')
+        
         out += '__asm _emit 0x'
         out += byte1.hex() + '\n'
         value = op[0]
@@ -274,8 +331,10 @@ def InsertOptype(buf:str):
     op = re.findall(r'0x([0-9a-fA-F]+)', buf)
     if len(op) != 0:
         type = optypes['const']
+        type = EncryptOperandType(type)
         szDefineOpsFunc += InsertOperandDefinition(op[0], type, True)
         byte = type.to_bytes(1, 'big')
+        
         out += '__asm _emit 0x'
         out += byte.hex() + '\n'
         return out
@@ -283,8 +342,10 @@ def InsertOptype(buf:str):
     op = re.findall(r'([0-9a-fA-F]+)', buf)
     if len(op) != 0:
         type = optypes['const']
+        type = EncryptOperandType(type)
         szDefineOpsFunc += InsertOperandDefinition(op[0], type, False)
         byte = type.to_bytes(1, 'big')
+        
         out += '__asm _emit 0x'
         out += byte.hex() + '\n'
         return out
@@ -378,29 +439,29 @@ def ParseFile(nameFile):
 
 
 
-def GenerateRotorValue():
-    valueArray = list()
+#def GenerateRotorValue():
+#    valueArray = list()
     
-    countFreeBase = 0x0f
-    global base
-    print('[', end =' ')
-    for val in range(16):
+#    countFreeBase = 0x0f
+#    global base
+#    print('[', end =' ')
+#    for val in range(16):
         
-        num_el_array = random.randint(0, countFreeBase)
-        valueArray.append(base[num_el_array])
+#        num_el_array = random.randint(0, countFreeBase)
+#        valueArray.append(base[num_el_array])
 
-        tmp = base[num_el_array]
-        base[num_el_array] = base[countFreeBase]
-        base[countFreeBase] = tmp
+#        tmp = base[num_el_array]
+#        base[num_el_array] = base[countFreeBase]
+#        base[countFreeBase] = tmp
 
-        countFreeBase -= 1
+#        countFreeBase -= 1
         
-        byte = valueArray[val]
-        byte = byte.to_bytes(1, 'big')
-        print('0x',byte.hex(),', ', sep = '', end='')
+#        byte = valueArray[val]
+#        byte = byte.to_bytes(1, 'big')
+#        print('0x',byte.hex(),', ', sep = '', end='')
     
-    print('],')
-    return
+#    print('],')
+#    return
 
 
 def main():

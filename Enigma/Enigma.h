@@ -73,6 +73,7 @@ typedef struct _cryptosysytem_
 
 //----------------------
 
+__declspec(dllexport) void MoveEncryptRotors(PCRYPTOSYSTEM cs);
 __declspec(dllexport) PCRYPTOSYSTEM init_crypto();
 __declspec(dllexport) BYTE Encrypt(PCRYPTOSYSTEM cs, BYTE value);
 __declspec(dllexport) BYTE Decrypt(PCRYPTOSYSTEM cs, BYTE value);

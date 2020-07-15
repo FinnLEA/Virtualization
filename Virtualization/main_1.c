@@ -34,9 +34,12 @@ instrFunc ParseInstructionOpcode(vm_ptr vm, BYTE opcode, BYTE* opCount) {
 		*opCount = 3;
 		return (instrFunc)_vm_init_cs_;
 	}
-
-	BYTE trueOpcode = Decrypt(vm->cs, opcode >> 4);
-
+	BYTE trueOpcode;
+	if (READ_EIF == 1) {
+		trueOpcode = Decrypt(vm->cs, opcode >> 4);
+	}
+	else {
+	}
 	switch (trueOpcode)	{
 	case 0x01:
 		*opCount = 2;
@@ -149,39 +152,41 @@ void func(int a, int b, int* c) {
 int main() {
 
 
+
+
+
 	
 	_BEGIN_PROTECT_(_1_KBYTE, _256_BYTE)
 	{
 		__try {
 			__asm ud2
 			__asm _emit 0x43
-			__asm _emit 0xbe
-			__asm _emit 0x49
-			__asm _emit 0x87
-			__asm _emit 0x5b
+			__asm _emit 0xac
+			__asm _emit 0xe5
+			__asm _emit 0x5c
+			__asm _emit 0x9f
 			{
 				define_operand(vm, 1, 1);
 				define_operand(vm, 4, 2);
 				__asm ud2
 				__asm _emit 0xe3
-				__asm _emit 0x46
-				__asm _emit 0x11
-				__asm _emit 0x42
-				define_operand(vm, 2, 0x00000004);
-				define_operand(vm, 3, 0xffffffff);
+				__asm _emit 0x0c
+				__asm _emit 0xd1
+				__asm _emit 0xd2
+				define_operand(vm, 12, 0x00000004);
+				define_operand(vm, 8, 0xffffffff);
 				__asm ud2
 				__asm _emit 0xe3
-				__asm _emit 0x46
-				__asm _emit 0x02
+				__asm _emit 0xe2
+				__asm _emit 0x0c
 				__asm _emit 0x04
-				__asm _emit 0x03
+				__asm _emit 0x08
 			}
 		}
 		__except (Handler(GetExceptionInformation())) {
 			_vm_destruct_(vm);
 		}
 	}
-	printf("%d\n", res);
 	system("pause");
 	return 0;
 }

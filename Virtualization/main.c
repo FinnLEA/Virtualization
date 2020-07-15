@@ -47,9 +47,13 @@ instrFunc ParseInstructionOpcode(vm_ptr vm, BYTE opcode, BYTE* opCount) {
 		*opCount = 3;
 		return (instrFunc)_vm_init_cs_;
 	}
-
-	BYTE trueOpcode = Decrypt(vm->cs, opcode >> 4);
-
+	BYTE trueOpcode;
+	if (READ_EIF == 1) {
+		trueOpcode = Decrypt(vm->cs, opcode >> 4);
+	}
+	else {
+		; // not Enigma
+	}
 	switch (trueOpcode)	{
 	case 0x01:
 		*opCount = 2;
@@ -90,8 +94,36 @@ instrFunc ParseInstructionOpcode(vm_ptr vm, BYTE opcode, BYTE* opCount) {
 	}
 }
 
-BYTE ParseOperandOpcode(BYTE operandByte, OP* operandStruct) {
+BYTE ParseOperandOpcode(vm_ptr vm, BYTE operandByte) {
 	//DecryptOperand
+	
+	BYTE trueType = Decrypt(vm->cs, operandByte >> 4);
+	DWORD ex_type;
+	BYTE retValue = 0;
+	switch ((enum _types_)trueType)
+	{
+	case reg_:
+	case regaddr_:
+		define_operand(vm, trueType, operandByte & 0x0f);
+		retValue = 1;
+		break;
+	case constaddr_:	
+		ex_type = 0;
+		_pop_(vm, &ex_type);
+		define_operand(vm, trueType, ex_type);
+		retValue = 2;
+		break;
+	case const_:
+		ex_type = 0;
+		_pop_(vm, &ex_type);
+		define_operand(vm, trueType, ex_type);
+		retValue = 1;
+		break;
+
+	default:
+		return retValue;
+	}
+
 	return 1;
 }
 
@@ -127,6 +159,11 @@ void ParseInstruction(PCONTEXT pContext, vm_ptr vm) {
 	instrByte = GET_BYTE_CIP(pContext);
 
 	pInstr = ParseInstructionOpcode(vm, instrByte, &opsCount);
+	if (!pInstr) {
+		// error
+		;
+	}
+
 	if (pInstr == _vm_init_cs_) {
 		pContext->Cip += 0x01;
 		op1Byte = GET_BYTE_CIP(pContext);
@@ -141,18 +178,46 @@ void ParseInstruction(PCONTEXT pContext, vm_ptr vm) {
 		pContext->Cip += 0x01;
 		op1Byte = GET_BYTE_CIP(pContext);
 		OP* op1 = (OP*)malloc(sizeof(OP));
+		OP* op2 = (OP*)malloc(sizeof(OP));
 
-		if (ParseOperandOpcode(op1Byte, op1) == 1) {
+		BYTE retParse = ParseOperandOpcode(vm, op1Byte);
+		if (retParse == 1) {
 			pContext->Cip += 0x01;
 		}
-		else {
+		else if (retParse == 2) {
 			pContext->Cip += 0x02;
 		}
+		else {
+			//error parse;
+			;
+		}
+		// если операндов 2
+		if (opsCount == 2) {
+			op2Byte = GET_BYTE_CIP(pContext);
+			
+			BYTE retParse = ParseOperandOpcode(vm, op2Byte); // return - количетство байт, занимаемых операндом
+			if (retParse == 1) {
+				pContext->Cip += 0x01;
+			}
+			else if (retParse == 2) {
+				pContext->Cip += 0x02;
+			}
+			else {
+				//error parse;
+				;
+			}
+			_init_ops_(vm, op1, op2);
+		}
+		else {
+			_init_operand_(vm, op1);
+		}
+		pInstr(vm, op1, op2);
 	}
-	
-
-
-
+	WRITE_MOF(0); 
+	WRITE_COF(0); 
+	WRITE_ROF(0); 
+	WRITE_EIF(0);
+	vm->REG[r9] = 0;
 }
 
 int Handler(EXCEPTION_POINTERS *pException, vm_ptr vm) {
@@ -186,63 +251,63 @@ int main() {
 
 	//DWORD res = 0;
 
-	_BEGIN_PROTECT_(_1_KBYTE, _256_BYTE)
-	{
-		__try {
-			__asm ud2
-			__asm _emit 0x43
-			__asm _emit 0xbe
-			__asm _emit 0x49
-			__asm _emit 0x87
-			__asm _emit 0x5b
-			{
-				define_operand(vm, 1, 1);
-				define_operand(vm, 4, 2);
-				__asm ud2
-				__asm _emit 0xe3
-				__asm _emit 0x46
-				__asm _emit 0x11
-				__asm _emit 0x42
-				define_operand(vm, 2, 0x00000004);
-				define_operand(vm, 3, 0xffffffff);
-				__asm ud2
-				__asm _emit 0xe3
-				__asm _emit 0x46
-				__asm _emit 0x02
-				__asm _emit 0x04
-				__asm _emit 0x03
-			}
-		}
-		__except (Handler(GetExceptionInformation(), vm)) {
-			_vm_destruct_(vm);
-		}
-		vm = 0;
-	}
-
-	PCRYPTOSYSTEM cs = init_crypto();
-	CsSetRotors(cs, valuesForRotors[9], valuesForRotors[7], valuesForRotors[0x0b]);
-	PSTATE State = (PSTATE)malloc(sizeof(STATE));
-
-	State->first = 0x04;
-	State->second = 0x08;
-	State->third = 0x05;
-
-	CsSetStates(cs, State);
-	BYTE res = Encrypt(cs, 1);
-	res = Decrypt(cs, res);
-	
-	//BEGIN_PROTECT _1_KBYTE, _256_BYTE
+	//_BEGIN_PROTECT_(_1_KBYTE, _256_BYTE)
 	//{
-	//	VM_MOV r0, [r1];
-	//	VM_MOV [0x00000004], ffffffff
-	//	//VM_MOV r0, [4]
-	//	//VM_ADD r0, 2
-	//	//VM_OR r0, 0x10
-	//	//VM_MOV r1, r0
+	//	__try {
+	//		__asm ud2
+	//		__asm _emit 0x43
+	//		__asm _emit 0x4c
+	//		__asm _emit 0x40
+	//		__asm _emit 0x39
+	//		__asm _emit 0x56
+	//		{
+	//			define_operand(vm, 1, 1);
+	//			define_operand(vm, 4, 2);
+	//			__asm ud2
+	//			__asm _emit 0xe3
+	//			__asm _emit 0xc0
+	//			__asm _emit 0x11
+	//			__asm _emit 0x42
+	//			define_operand(vm, 2, 0x00000004);
+	//			define_operand(vm, 3, 0xffffffff);
+	//			__asm ud2
+	//			__asm _emit 0xe3
+	//			__asm _emit 0x2a
+	//			__asm _emit 0x02
+	//			__asm _emit 0x04
+	//			__asm _emit 0x03
+	//		}
+	//	}
+	//	__except (Handler(GetExceptionInformation(), vm)) {
+	//		_vm_destruct_(vm);
+	//	}
+	//	vm = 0;
 	//}
-	//END_PROTECT(res);
 
-	printf("%d\n", res);
+	//PCRYPTOSYSTEM cs = init_crypto();
+	//CsSetRotors(cs, valuesForRotors[9], valuesForRotors[7], valuesForRotors[0x0b]);
+	//PSTATE State = (PSTATE)malloc(sizeof(STATE));
+
+	//State->first = 0x04;
+	//State->second = 0x08;
+	//State->third = 0x05;
+
+	//CsSetStates(cs, State);
+	//BYTE res = Encrypt(cs, 1);
+	//res = Decrypt(cs, res);
+	
+	BEGIN_PROTECT _1_KBYTE, _256_BYTE
+	{
+		VM_MOV r0, [r1];
+		VM_MOV [0x00000004], ffffffff
+		//VM_MOV r0, [4]
+		//VM_ADD r0, 2
+		//VM_OR r0, 0x10
+		//VM_MOV r1, r0
+	}
+	END_PROTECT(res);
+
+//	printf("%d\n", res);
 	system("pause");
 	return 0;
 }

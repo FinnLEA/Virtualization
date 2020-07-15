@@ -41,13 +41,15 @@ enigmaModule.init_crypto.argtypes = [ctypes.c_void_p]
 
 # BYTE Encrypt(PCRYPTOSYSTEM cs, BYTE value);
 enigmaModule.Encrypt.restype = ctypes.c_ubyte
-enigmaModule.Encrypt.argtypes = [ctypes.POINTER(CRYPTOSYSTEM), ctypes.c_ubyte,]
+enigmaModule.Encrypt.argtypes = [ctypes.POINTER(CRYPTOSYSTEM), ctypes.c_ubyte]
 
 # BYTE Decrypt(PCRYPTOSYSTEM cs, BYTE value);
 enigmaModule.Decrypt.restype = ctypes.c_ubyte
-enigmaModule.Decrypt.argtypes = [ctypes.POINTER(CRYPTOSYSTEM), ctypes.c_ubyte,]
+enigmaModule.Decrypt.argtypes = [ctypes.POINTER(CRYPTOSYSTEM), ctypes.c_ubyte]
 
 # void CsSetRotors(PCRYPTOSYSTEM cs, ALPH rotor1, ALPH rotor2, ALPH rotor3);
-enigmaModule.CsSetRotors.argtypes = [ctypes.POINTER(CRYPTOSYSTEM), ctypes.POINTER(ctypes.c_ubyte), ctypes.POINTER(ctypes.c_ubyte), ctypes.POINTER(ctypes.c_ubyte),]
+enigmaModule.CsSetRotors.argtypes = [ctypes.POINTER(CRYPTOSYSTEM), ctypes.POINTER(ctypes.c_ubyte), ctypes.POINTER(ctypes.c_ubyte), ctypes.POINTER(ctypes.c_ubyte)]
 
 
+# void MoveEncryptRotors(PCRYPTOSYSTEM cs)
+enigmaModule.MoveEncryptRotors.argtypes = [ctypes.POINTER(CRYPTOSYSTEM)]

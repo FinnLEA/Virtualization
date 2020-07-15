@@ -232,7 +232,8 @@ static BYTE MoveEncryptRotor_3(PCRYPTOSYSTEM cs) {
 	return mod16(++GET_CURR_STATE(cs, encrypt, third));
 }
 
-static void MoveEncryptRotors(PCRYPTOSYSTEM cs) {
+__declspec(dllexport)
+void MoveEncryptRotors(PCRYPTOSYSTEM cs) {
 	if (MoveEncryptRotor_1(cs) == 0x00)
 		if (MoveEncryptRotor_2(cs) == 0x00)
 			if (MoveEncryptRotor_3(cs) == 0x00);
