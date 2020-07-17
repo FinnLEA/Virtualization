@@ -1,6 +1,7 @@
 import sys
 import random
 
+from ctypes import *
 import ctypes
 import struct
 
@@ -37,20 +38,52 @@ class CRYPTOSYSTEM(ctypes.Structure):
 #       FUNCTIONS
 
 # PCRYPTOSYSTEM init_crypto()
-enigmaModule.init_crypto.restype = ctypes.POINTER(CRYPTOSYSTEM)
+enigmaModule.init_crypto.restype = POINTER(CRYPTOSYSTEM)
 enigmaModule.init_crypto.argtypes = [ctypes.c_void_p]
 
 # BYTE Encrypt(PCRYPTOSYSTEM cs, BYTE value);
-enigmaModule.Encrypt.restype = ctypes.c_ubyte
-enigmaModule.Encrypt.argtypes = [ctypes.POINTER(CRYPTOSYSTEM), ctypes.c_ubyte]
+enigmaModule.Encrypt.restype = c_ubyte
+enigmaModule.Encrypt.argtypes = [POINTER(CRYPTOSYSTEM), c_ubyte]
 
 # BYTE Decrypt(PCRYPTOSYSTEM cs, BYTE value);
-enigmaModule.Decrypt.restype = ctypes.c_ubyte
-enigmaModule.Decrypt.argtypes = [ctypes.POINTER(CRYPTOSYSTEM), ctypes.c_ubyte]
+enigmaModule.Decrypt.restype = c_ubyte
+enigmaModule.Decrypt.argtypes = [POINTER(CRYPTOSYSTEM), c_ubyte]
 
 # void CsSetRotors(PCRYPTOSYSTEM cs, ALPH rotor1, ALPH rotor2, ALPH rotor3);
-enigmaModule.CsSetRotors.argtypes = [ctypes.POINTER(CRYPTOSYSTEM), ctypes.POINTER(ctypes.c_ubyte), ctypes.POINTER(ctypes.c_ubyte), ctypes.POINTER(ctypes.c_ubyte)]
+enigmaModule.CsSetRotors.argtypes = [POINTER(CRYPTOSYSTEM), POINTER(c_ubyte), POINTER(c_ubyte), POINTER(c_ubyte)]
 
 
 # void MoveEncryptRotors(PCRYPTOSYSTEM cs)
 enigmaModule.MoveEncryptRotors.argtypes = [ctypes.POINTER(CRYPTOSYSTEM)]
+
+
+
+def mod16(value:c_ubyte) -> c_ubyte:
+    return ((value % 16) + 16) % 16
+
+def MoveRotor_1(state:POINTER(STATE)) -> c_ubyte:
+    state.contents.first += 1
+    state.contents.first = mod16(state.contents.first)
+    return state.contents.first
+
+def MoveRotor_2(state:POINTER(STATE)) -> c_ubyte:
+    state.contents.second += 1
+    state.contents.second = mod16(state.contents.second)
+    return state.contents.second
+
+def MoveRotor_3(state:POINTER(STATE)) -> c_ubyte:
+    state.contents.third += 1
+    state.contents.third = mod16(state.contents.third)
+    return state.contents.third
+
+def MoveEncryptRotors(cs:POINTER(CRYPTOSYSTEM)):
+    
+    curr_st = cs.contents.encrypt.contents.curr_state
+    if MoveRotor_1(curr_st) == 0:
+        if MoveRotor_2(curr_st) == 0:
+            if MoveRotor_3(curr_st) == 0:
+                return
+    
+    return
+
+

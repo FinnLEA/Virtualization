@@ -17,4 +17,9 @@
 #define _While(expression)	while(expression) {
 #define _Endw	}
 
+#define STATIC_CODE
+#define static_code
+#define ENDS
+#define ends
+
 #define BEGIN_PROTECT

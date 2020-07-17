@@ -57,47 +57,23 @@ opcodes = {
 
 preffs = {
             'ENIGMA'    : 0xe3,
-            'STATIC'    : 0x4a
+            'STATIC'    : 0x40
          }
 
 busyOpcodes = [0xbe, 0xac, 0x05, 0x4c, 0xb0]
 
 countOperands = 2
 szDefineOpsFunc = ''
+oldPref = 0
 instructionPref = 0xe3 # standart pref for Enigma code
 flagStart = False
 
 cs = None
 
+mode = 0  # 0 - Enigma, 1 - Static
 
+indexForStatic = 0
 
-def mod16(value:c_ubyte) -> c_ubyte:
-    return ((value % 16) + 16) % 16
-
-def MoveRotor_1(state:POINTER(STATE)) -> c_ubyte:
-    state.contents.first += 1
-    state.contents.first = mod16(state.contents.first)
-    return state.contents.first
-
-def MoveRotor_2(state:POINTER(STATE)) -> c_ubyte:
-    state.contents.second += 1
-    state.contents.second = mod16(state.contents.second)
-    return state.contents.second
-
-def MoveRotor_3(state:POINTER(STATE)) -> c_ubyte:
-    state.contents.third += 1
-    state.contents.third = mod16(state.contents.third)
-    return state.contents.third
-
-def MoveEncryptRotors(cs:POINTER(CRYPTOSYSTEM)):
-    
-    curr_st = cs.contents.encrypt.contents.curr_state
-    if MoveRotor_1(curr_st) == 0:
-        if MoveRotor_2(curr_st) == 0:
-            if MoveRotor_3(curr_st) == 0:
-                return
-    
-    return
 
 def EncryptByte(byte:int) -> int:
     global cs
@@ -107,19 +83,20 @@ def EncryptByte(byte:int) -> int:
     #MoveEncryptRotors(cs)
     return encryptByte
 
-
 #--------------------------------------
 #      Parse and insert instructions
 
 def EncryptOpcode(opcode:int) -> int:
-
-    opcode = EncryptByte(opcode)
-    opcode <<= 4
-    opcode |= random.randint(0, 0x0f)
-    for val in busyOpcodes:
-        while val == opcode:
-            opcode |= random.randint(0, 0x0f)
-
+    if mode == 0:
+        opcode = EncryptByte(opcode)
+        opcode <<= 4
+        opcode |= random.randint(0, 0x0f)
+        for val in busyOpcodes:
+            while val == opcode:
+                opcode |= random.randint(0, 0x0f)
+    else:
+        opcode = staticOpcodes[indexForStatic][opcode - 1]
+    
     return opcode
 
 def InsertOpcode(instrName:str) -> str:
@@ -140,7 +117,13 @@ def InsertOpcode(instrName:str) -> str:
 #      Parse and insert preffix
 
 def InsertPref():
-    byte = instructionPref.to_bytes(1, byteorder='big')
+    exPref = instructionPref
+    if mode == 1:        
+        global indexForStatic
+        indexForStatic = random.randint(0, 0x0f)
+        exPref |= indexForStatic
+
+    byte = exPref.to_bytes(1, byteorder='big')
     outStr = '__asm _emit 0x'
     outStr += byte.hex() + '\n'
     return outStr
@@ -303,11 +286,14 @@ def RememberOperandDefinition(szOp:str, type:int, encType:int = 0, isHex = False
     return 
 
 def EncryptOperandType(byte:int) -> int:
-    encryptedByte = EncryptByte(byte)
-    if byte == optypes['const'] or byte == optypes['constaddr']:
-        encryptedByte <<= 4
-        encryptedByte |= random.randint(0, 0x0f)
+    if mode == 0:
+        encryptedByte = EncryptByte(byte)
+    elif mode == 1:
+        encryptedByte = staticOpTypes[indexForStatic][byte - 1]
 
+    if byte == optypes['const'] or byte == optypes['constaddr']:
+            encryptedByte <<= 4
+            encryptedByte |= random.randint(0, 0x0f)
     return encryptedByte
 
 def InsertOptype(buf:str):
@@ -451,7 +437,7 @@ def ParseOperands(buf:str):
 #--------------------------------------
 #      Insert full instructions
 
-def InsertInstruction(buf:str):
+def InsertInstruction(buf:str) -> str:
     global szDefineOpsFunc
     szDefineOpsFunc = ''
     outBuf = ''
@@ -472,6 +458,10 @@ def InsertInstruction(buf:str):
     
     return outBuf
 
+
+#--------------------------------------
+#       Handle While
+
 def ParseCycle(buf:str) -> str:
     outBuf = ''
     global instructionPref
@@ -480,6 +470,47 @@ def ParseCycle(buf:str) -> str:
     outBuf += buf
 
     return outBuf
+
+def ParseEndCycle(buf:str) -> str:
+    outBuf = ''
+    global instructionPref
+    instructionPref += 2
+
+    outBuf += buf
+    
+    return outBuf
+
+
+#--------------------------------------
+#       Handle Static code
+def ParseStaticCode(bif:str) -> str:
+    outBuf = ''
+    global instructionPref
+    global oldPref
+    global mode
+
+    mode = 1
+    oldPref = instructionPref
+    instructionPref = preffs['STATIC']
+
+    return outBuf
+
+
+def ParseEndStaticCode(buf:str) -> str:
+    outBuf = ''
+    global instructionPref
+    global oldPref
+    global mode 
+
+    mode = 0
+    
+    if oldPref == preffs['ENIGMA']:
+        instructionPref = oldPref
+    else:
+        instructionPref = preffs['ENIGMA']
+    
+    return outBuf
+
 
 #
 #   Читает файл в буфер
@@ -501,11 +532,17 @@ def ParseFile(nameFile):
             if tmp.find('BEGIN_PROTECT', 0) != -1:
                 fdBuf += ParseInitVM(tmp)
           #pos = tmp.find('VM_', 0)
-            elif tmp.find('VM_', 0) != -1:
+            elif tmp.find('VM_', 0) != -1 and flagStart == True:
                 fdBuf += InsertInstruction(tmp)
             elif tmp.find('_While', 0) != -1 and flagStart == True:
                 fdBuf += ParseCycle(tmp)
-            elif tmp.find('END_PROTECT', 0) != -1:
+            elif (tmp.find('STATIC_CODE', 0) != -1 or tmp.find('static_code', 0) != -1) and flagStart == True:
+                fdBuf += ParseStaticCode(tmp)
+            elif (tmp.find('ENDS', 0) != -1 or tmp.find('ends', 0) != -1) and flagStart == True:
+                 fdBuf += ParseEndStaticCode(tmp)
+            elif tmp.find('_Endw', 0) != -1 and flagStart == True:
+                fdBuf += ParseEndCycle(tmp)
+            elif tmp.find('END_PROTECT', 0) != -1 and flagStart == True:
                 fdBuf += ParseEndVM(tmp)
             else:
                 fdBuf += tmp
@@ -523,29 +560,38 @@ def ParseFile(nameFile):
 
 
 
-#def GenerateRotorValue():
-#    valueArray = list()
+def GenerateRotorValue():
+    valueArray = list()
     
-#    countFreeBase = 0x0f
-#    global base
-#    print('[', end =' ')
-#    for val in range(16):
+    countFreeBase = 0xff
+    global base
+    alf = range(0, 0x100)
+    local_base = list(alf)
+    print('[', end =' ')
+    for val in range(11):
         
-#        num_el_array = random.randint(0, countFreeBase)
-#        valueArray.append(base[num_el_array])
-
-#        tmp = base[num_el_array]
-#        base[num_el_array] = base[countFreeBase]
-#        base[countFreeBase] = tmp
-
-#        countFreeBase -= 1
+               
+        num_el_array = random.randint(0, countFreeBase)
+        value = local_base[num_el_array]
         
-#        byte = valueArray[val]
-#        byte = byte.to_bytes(1, 'big')
-#        print('0x',byte.hex(),', ', sep = '', end='')
+        for i in busyOpcodes:
+            while value == i:
+                num_el_array = random.randint(0, countFreeBase)
+                value = local_base[num_el_array]
+
+        valueArray.append(value)
+        tmp = local_base[num_el_array]
+        local_base[num_el_array] = local_base[countFreeBase]
+        local_base[countFreeBase] = tmp
+
+        countFreeBase -= 1
+        
+        byte = valueArray[val]
+        byte = byte.to_bytes(1, 'big')
+        print('0x',byte.hex(),', ', sep = '', end='')
     
-#    print('],')
-#    return
+    print('],')
+    return
 
 
 def main():
@@ -561,8 +607,10 @@ def main():
     #    resenc = enigmaModule.Encrypt(cs, c_ubyte(i))
     #    resdec = enigmaModule.Decrypt(cs, c_ubyte(resenc))
     #    print(i, ' -> ', resenc, ' -> ', resdec)
-    
+    #for i in range(0, 0x0f):
+    #    GenerateRotorValue() 
     ParseFile("../Virtualization/main.c")
+
     return 0
     
 

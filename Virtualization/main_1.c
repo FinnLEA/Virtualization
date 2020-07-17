@@ -35,10 +35,14 @@ instrFunc ParseInstructionOpcode(vm_ptr vm, BYTE opcode, BYTE* opCount) {
 		return (instrFunc)_vm_init_cs_;
 	}
 	BYTE trueOpcode;
-	if (READ_EIF == 1) {
+		if(READ_CEF == 0)
+			trueOpcode = Decrypt(vm->cs, opcode >> 4);
+		else if (READ_CEF == 1 && vm->CS[IP] == 0) {
+			trueOpcode = Decrypt(vm->cs, opcode >> 4);
+		}
 		trueOpcode = Decrypt(vm->cs, opcode >> 4);
 	}
-	else {
+		trueOpcode = FindInOpcodeTable(opcode, (BYTE)vm->REG[r10]);
 	}
 	switch (trueOpcode)	{
 	case 0x01:
@@ -68,6 +72,12 @@ instrFunc ParseInstructionOpcode(vm_ptr vm, BYTE opcode, BYTE* opCount) {
 	case 0x09:
 		*opCount = 2;
 		return (instrFunc)_vm_div_;
+	case 0x0a:
+		*opCount = 1;
+		return (instrFunc)_vm_push_;
+	case 0x0b:
+		*opCount = 1;
+		return (instrFunc)_vm_pop_;
 		
 	default:
 		return NULL;
@@ -75,10 +85,17 @@ instrFunc ParseInstructionOpcode(vm_ptr vm, BYTE opcode, BYTE* opCount) {
 }
 
 BYTE ParseOperandOpcode(vm_ptr vm, BYTE operandByte) {
-	
-	BYTE trueType = Decrypt(vm->cs, operandByte >> 4);
+	BYTE trueType;
 	DWORD ex_type;
 	BYTE retValue = 0;
+	
+	if (READ_EIF == 1) {
+		trueType = Decrypt(vm->cs, operandByte >> 4);
+	}
+	else {
+		trueType = FindInOpTypeTable(operandByte, vm->REG[r10]);
+	}
+
 	switch ((enum _types_)trueType)
 	{
 	case reg_:
@@ -107,15 +124,22 @@ BYTE ParseOperandOpcode(vm_ptr vm, BYTE operandByte) {
 }
 
 void ParsePref(BYTE preffix, vm_ptr vm) {
-
-	if (preffix == 0x43) {
+	switch (preffix)
+	{
 		return;
-	}
 
-	if (preffix == 0xe3) {
 		WRITE_EIF(1);
-	}
+		return;
 
+		WRITE_CEF(1);
+		WRITE_EIF(1);
+		return;
+
+		WRITE_CEF(0); 
+		vm->REG[r10] = preffix & 0x0f;
+		break;
+	}
+	
 }
 
 
@@ -205,12 +229,10 @@ int Handler(EXCEPTION_POINTERS *pException, vm_ptr vm) {
 	}
 }
 
-void func(int a, int b, int* c) {
-	*c = a + b + *c;
-	return;
-}
 
 int main() {
+
+
 
 
 
@@ -229,44 +251,53 @@ int main() {
 		res = Decrypt(cs, res);
 		printf(" -> %x\n", res);
 	}*/
-	
+	DWORD res;
 	_BEGIN_PROTECT_(_32_KBYTE, _256_BYTE)
 	{
 		__try {
 			__asm ud2
 			__asm _emit 0x43
 			__asm _emit 0xb0
-			__asm _emit 0xb3
-			__asm _emit 0xd7
-			__asm _emit 0x33
+			__asm _emit 0x0a
+			__asm _emit 0x2a
+			__asm _emit 0xcc
 			{
+
+				_push_(vm, 1);
+				__asm ud2
+				__asm _emit 0x4e
+				__asm _emit 0xfa
+				__asm _emit 0x82
+				__asm _emit 0x6d
+
+
 				__asm ud2
 				__asm _emit 0xe3
-				__asm _emit 0xee
-				__asm _emit 0xf1
-				__asm _emit 0xf2
+				__asm _emit 0xce
+				__asm _emit 0x51
+				__asm _emit 0x12
 				_push_(vm, 120);
 				_push_(vm, 0x00000006);
 				__asm ud2
 				__asm _emit 0xe3
-				__asm _emit 0x36
+				__asm _emit 0xf2
 				__asm _emit 0xcd
 				__asm _emit 0x04
-				__asm _emit 0x9b
+				__asm _emit 0xed
 				_push_(vm, 0xfcfcfcfd);
 				_push_(vm, 0x00000006);
 				__asm ud2
 				__asm _emit 0xe3
-				__asm _emit 0x73
-				__asm _emit 0x9f
+				__asm _emit 0x3d
+				__asm _emit 0x36
 				__asm _emit 0x04
-				__asm _emit 0x60
+				__asm _emit 0x16
 				_push_(vm, 1);
 				__asm ud2
 				__asm _emit 0xe3
-				__asm _emit 0xad
-				__asm _emit 0x06
-				__asm _emit 0x6a
+				__asm _emit 0xc0
+				__asm _emit 0x56
+				__asm _emit 0x4b
 			}
 		}
 		__except (Handler(GetExceptionInformation())) {

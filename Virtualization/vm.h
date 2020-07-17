@@ -65,15 +65,18 @@ enum _types_
 #define IP		8
 #define	SP		9
 #define	r9		10
+#define r10		11
+#define COUNT_REGS r10
 																								// ���� ����������, �� ����� � ������(4 ���� �������� (�� ������ 32 �����)
-#define FLAGS	0		/*										| EIF | COF | MOF |	ROF | 	?	  |	DS     |size SS (0_0 - 128 byte, 0_1 - 256 bytes, 1_0 - 512 bytes, 1_1 - 1024 bytes)
-							_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _	|  _  |  _  |  _  |  _  | _ _ _ _ |_ _ _ _ | _ _
+#define FLAGS	0		/*									  |	CEF | EIF | COF | MOF |	ROF | 	?	  |	DS     |size SS (0_0 - 128 byte, 0_1 - 256 bytes, 1_0 - 512 bytes, 1_1 - 1024 bytes)
+							_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ |  _  |  _  |  _  |  _  |  _  | _ _ _ _ |_ _ _ _ | _ _
 																
 															- MOF - memory operand flag (11)
 															- COF - const operand flag (12)
 															- ROF - register operand flag (10)
 															- EIF - Execute Instruction Flag (13)
-						*/
+															- CEF - Cycle Execution Flag (14)
+						*/	
 
 #define ROR(val, step)		((val >> step) | (val << (32 - step)))
 #define ROL(val, step)		((val << step) | (val >> (32 - step)))	
@@ -96,6 +99,10 @@ enum _types_
 #define FLAG_EIF			(ROR(vm->REG[FLAGS], 13))
 #define READ_EIF			(FLAG_EIF & 0b1)
 #define WRITE_EIF(bits)		(vm->REG[FLAGS] = ROL(((FLAG_EIF & 0xfffffffe) | bits), 13))
+
+#define FLAG_CEF			(ROR(vm->REG[FLAGS], 14))
+#define READ_CEF			(FLAG_EIF & 0b1)
+#define WRITE_CEF(bits)		(vm->REG[FLAGS] = ROL(((FLAG_EIF & 0xfffffffe) | bits), 14))
 
 
 //----------------------
@@ -123,6 +130,10 @@ enum _types_
 
 //----------------------
 
+#define READ_CURR_INSTR		
+
+//----------------------
+
 
 
 typedef struct _VM_ 
@@ -131,12 +142,13 @@ typedef struct _VM_
 	uint32_t* SS;
 	BYTE* DS;
 
-	uint32_t REG[11];
+	uint32_t REG[12];
 
 	PCRYPTOSYSTEM cs;
 
 } vm_, *vm_ptr;
 
+#define COUNT_INSTRUCTIONS	11
 
 #define _MOV_OPCODE_		\
 	{ 0x00, 0x01, 0x00, 0x00 }
@@ -165,7 +177,8 @@ extern BYTE startOpcodes[COUNT_START_OPCODES];
 */
 
 extern BYTE valuesForRotors[16][16];
-
+extern BYTE staticOpcodes[16][11];
+extern BYTE staticOpTypes[16][4];
 
 
 
@@ -174,6 +187,8 @@ extern BYTE valuesForRotors[16][16];
 static BYTE table[4][4] = OPCODE_TABLE;
 //----------------------
 void _generate_opcode_table_();
+BYTE FindInOpcodeTable(BYTE opcode, BYTE index);
+BYTE FindInOpTypeTable(BYTE operandByte, BYTE index);
 void _push_(vm_ptr, DWORD);
 void _pop_(vm_ptr vm, DWORD* dst);
 uint32_t define_operand(vm_ptr vm, enum _types_ type, DWORD ex_type);
