@@ -13,3 +13,8 @@
 #define VM_CALL
 #define VM_PUSH
 #define VM_POP
+
+#define _While(expression)	while(expression) {
+#define _Endw	}
+
+#define BEGIN_PROTECT

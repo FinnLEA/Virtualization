@@ -11,6 +11,31 @@ _vr9 macro vm_
 
 endm
 
+FIRST	equ 0
+SECOND	equ 4
+
+;FLAG_DS	macro vm_
+	;vm_ + 0ch
+;endm
+;
+;SIZE_DS macro vm_
+	;
+	;mov ebx, vm_
+	;add ebx, 0Ch ;vn->REG[EFLAGS]
+	;mov eax, ebx
+	;1 shl (FLAG_DS + 7)
+;
+;endm
+;
+;READ_OP_DS macro vm_, number, dst
+	;
+	;mov ebx, vm_
+	;add ebx, 08h
+	;mov eax, ebx
+;
+;
+;endm
+
 .data
 
 
@@ -18,6 +43,7 @@ endm
 
 _push_	proto c :PTR DWORD, :DWORD
 _pop_	proto c :PTR DWORD, :PTR DWORD
+_get_secret_op_value_ proto c :PTR DWORD, :WORD, :PTR DWORD
 ;
 ;foo proc
 	;
@@ -46,23 +72,33 @@ _init_ops_ proc vm:ptr DWORD, op1:PTR DWORD, op2:PTR DWORD
 			;pop eax
 		.elseif cx >= 0300h
 			mov bl, ch
+			shl bl, 4
 			mov byte ptr [edi], bl
 			lea ecx, [edi + 1]
 			push eax
 			push dx
-			invoke _pop_, [vm], ecx
+			;invoke _pop_, [vm], ecx
+			mov ax, 4
+			sub dx, 1
+			mul dx
+			invoke _get_secret_op_value_, [vm], ax, ecx
 			pop dx
 			pop eax
 		.elseif cx >= 0200h
 			mov bl, ch
+			shl bl, 4
 			mov byte ptr [edi], bl
 			lea ecx, [edi + 1]
 			push eax
 			push dx
-			invoke _pop_, [vm], ecx
+			;invoke _pop_, [vm], ecx
+			mov ax, 4
+			sub dx, 1
+			mul dx
+			invoke _get_secret_op_value_, [vm], ax, ecx
 			pop dx
 			pop eax
-			sub [edi + 1], bl
+			;sub [edi + 1], bl
 		.endif
 		mov ecx, [eax + 2]
 		dec dx
@@ -87,19 +123,27 @@ _init_operand_ proc vm:ptr DWORD, op:PTR DWORD
 		mov byte ptr [edi + 1], cl
 	.elseif cx >= 0300h
 		mov bl, ch
+		shl bl, 4
 		mov byte ptr [edi], bl
 		lea ecx, [edi + 1]
 		push eax
-		invoke _pop_, [vm], ecx
+		;invoke _pop_, [vm], ecx
+		;mov ax, 4
+		;mul dx
+		invoke _get_secret_op_value_, [vm], FIRST, ecx
 		pop eax
 	.else 
 		mov bl, ch
+		shl bl, 4
 		mov byte ptr [edi], bl
 		push eax
-		invoke _pop_, [vm], [edi + 1]
+		;invoke _pop_, [vm], [edi + 1]
+		invoke _get_secret_op_value_, [vm], FIRST, ecx
 		pop eax
 		sub [edi + 1], bl
 	.endif
+	;mov ecx, [eax]
+	;shr dword ptr [eax], 16
 
 	ret
 

@@ -22,6 +22,7 @@ class MACHINE(ctypes.Structure):
                ('rotor_1',      ctypes.POINTER(ctypes.c_ubyte)),
                ('rotor_2',      ctypes.POINTER(ctypes.c_ubyte)),
                ('rotor_3',      ctypes.POINTER(ctypes.c_ubyte)),
+               ('reflector',   ctypes.POINTER(ctypes.c_ubyte)),
                ('curr_state',   ctypes.POINTER(STATE))]
                 
 

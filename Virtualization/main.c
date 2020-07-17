@@ -82,12 +82,12 @@ instrFunc ParseInstructionOpcode(vm_ptr vm, BYTE opcode, BYTE* opCount) {
 	case 0x09:
 		*opCount = 2;
 		return (instrFunc)_vm_div_;
-	//case 0x0a:
-	//	*opCount = 1;
-	//	return (instrFunc)_vm_push_;
-	//case 0x0b:
-	//	*opCount = 1;
-	//	return (instrFunc)_vm_pop_;
+	case 0x0a:
+		*opCount = 1;
+		return (instrFunc)_vm_push_;
+	case 0x0b:
+		*opCount = 1;
+		return (instrFunc)_vm_pop_;
 		
 	default:
 		return NULL;
@@ -96,10 +96,17 @@ instrFunc ParseInstructionOpcode(vm_ptr vm, BYTE opcode, BYTE* opCount) {
 
 BYTE ParseOperandOpcode(vm_ptr vm, BYTE operandByte) {
 	//DecryptOperand
-	
-	BYTE trueType = Decrypt(vm->cs, operandByte >> 4);
+	BYTE trueType;
 	DWORD ex_type;
 	BYTE retValue = 0;
+	
+	if (READ_EIF == 1) {
+		trueType = Decrypt(vm->cs, operandByte >> 4);
+	}
+	else {
+		;//
+	}
+
 	switch ((enum _types_)trueType)
 	{
 	case reg_:
@@ -124,7 +131,7 @@ BYTE ParseOperandOpcode(vm_ptr vm, BYTE operandByte) {
 		return retValue;
 	}
 
-	return 1;
+	return retValue;
 }
 
 void ParsePref(BYTE preffix, vm_ptr vm) {
@@ -144,6 +151,11 @@ void ParsePref(BYTE preffix, vm_ptr vm) {
 
 }
 
+//#define _2_	2
+//#define _1_ 1
+//#define PARSE_OPERAND(count)	\
+//	opcountbyte
+
 void ParseInstruction(PCONTEXT pContext, vm_ptr vm) {
 	BYTE preffixByte, instrByte, op1Byte, op2Byte, op3Byte;
 	BYTE opsCount = 0;
@@ -162,6 +174,7 @@ void ParseInstruction(PCONTEXT pContext, vm_ptr vm) {
 	if (!pInstr) {
 		// error
 		;
+		return;
 	}
 
 	if (pInstr == _vm_init_cs_) {
@@ -176,11 +189,48 @@ void ParseInstruction(PCONTEXT pContext, vm_ptr vm) {
 	}
 	else {
 		pContext->Cip += 0x01;
-		op1Byte = GET_BYTE_CIP(pContext);
+		
 		OP* op1 = (OP*)malloc(sizeof(OP));
 		OP* op2 = (OP*)malloc(sizeof(OP));
+		BYTE retParse;
 
-		BYTE retParse = ParseOperandOpcode(vm, op1Byte);
+		//switch (opsCount)
+		//{
+		//case 2:
+		//	op2Byte = GET_BYTE_CIP(pContext);
+		//	retParse = ParseOperandOpcode(vm, op2Byte); // return - количетство байт, занимаемых операндом
+		//	if (retParse == 1) {
+		//		pContext->Cip += 0x01;
+		//	}
+		//	else if (retParse == 2) {
+		//		pContext->Cip += 0x02;
+		//	}
+		//	else {
+		//		//error parse;
+		//		;
+		//	}
+		//	_init_operand_(vm, op2);
+		//case 1:
+		//	op1Byte = GET_BYTE_CIP(pContext);
+		//	BYTE retParse = ParseOperandOpcode(vm, op1Byte);
+		//	if (retParse == 1) {
+		//		pContext->Cip += 0x01;
+		//	}
+		//	else if (retParse == 2) {
+		//		pContext->Cip += 0x02;
+		//	}
+		//	else {
+		//		//error parse;
+		//		;
+		//	}
+		//	_init_operand_(vm, op1);
+		//	break;
+		//default:
+		//	break;
+		//}
+
+		op1Byte = GET_BYTE_CIP(pContext);
+		retParse = ParseOperandOpcode(vm, op1Byte);
 		if (retParse == 1) {
 			pContext->Cip += 0x01;
 		}
@@ -251,57 +301,79 @@ int main() {
 
 	//DWORD res = 0;
 
-	//_BEGIN_PROTECT_(_1_KBYTE, _256_BYTE)
-	//{
-	//	__try {
-	//		__asm ud2
-	//		__asm _emit 0x43
-	//		__asm _emit 0x4c
-	//		__asm _emit 0x40
-	//		__asm _emit 0x39
-	//		__asm _emit 0x56
-	//		{
-	//			define_operand(vm, 1, 1);
-	//			define_operand(vm, 4, 2);
-	//			__asm ud2
-	//			__asm _emit 0xe3
-	//			__asm _emit 0xc0
-	//			__asm _emit 0x11
-	//			__asm _emit 0x42
-	//			define_operand(vm, 2, 0x00000004);
-	//			define_operand(vm, 3, 0xffffffff);
-	//			__asm ud2
-	//			__asm _emit 0xe3
-	//			__asm _emit 0x2a
-	//			__asm _emit 0x02
-	//			__asm _emit 0x04
-	//			__asm _emit 0x03
-	//		}
-	//	}
-	//	__except (Handler(GetExceptionInformation(), vm)) {
-	//		_vm_destruct_(vm);
-	//	}
-	//	vm = 0;
-	//}
-
-	//PCRYPTOSYSTEM cs = init_crypto();
-	//CsSetRotors(cs, valuesForRotors[9], valuesForRotors[7], valuesForRotors[0x0b]);
-	//PSTATE State = (PSTATE)malloc(sizeof(STATE));
-
-	//State->first = 0x04;
-	//State->second = 0x08;
-	//State->third = 0x05;
-
-	//CsSetStates(cs, State);
-	//BYTE res = Encrypt(cs, 1);
-	//res = Decrypt(cs, res);
-	
-	BEGIN_PROTECT _1_KBYTE, _256_BYTE
+	_BEGIN_PROTECT_(_128_BYTE, _256_BYTE)
 	{
+		__try {
+			__asm ud2
+			__asm _emit 0x43
+			__asm _emit 0xb0
+			__asm _emit 0xb3
+			__asm _emit 0xd7
+			__asm _emit 0x33
+			{
+				__asm ud2
+				__asm _emit 0xe3
+				__asm _emit 0xee
+				__asm _emit 0xf1
+				__asm _emit 0xf2
+				_push_(vm, 120);
+				_push_(vm, 0x00000006);
+				__asm ud2
+				__asm _emit 0xe3
+				__asm _emit 0x36
+				__asm _emit 0xcd
+				__asm _emit 0x04
+				__asm _emit 0x9b
+				_push_(vm, 0xfcfcfcfd);
+				_push_(vm, 0x00000006);
+				__asm ud2
+				__asm _emit 0xe3
+				__asm _emit 0x73
+				__asm _emit 0x9f
+				__asm _emit 0x04
+				__asm _emit 0x60
+				_push_(vm, 1);
+				__asm ud2
+				__asm _emit 0xe3
+				__asm _emit 0xad
+				__asm _emit 0x06
+				__asm _emit 0x6a
+			}
+		}
+		__except (Handler(GetExceptionInformation(), vm)) {
+			_vm_destruct_(vm);
+		}
+		vm = 0;
+	}
+
+	/*PCRYPTOSYSTEM cs = init_crypto();
+	CsSetRotors(cs, valuesForRotors[9], valuesForRotors[7], valuesForRotors[0x0b]);
+	PSTATE State = (PSTATE)malloc(sizeof(STATE));
+
+	State->first = 0x04;
+	State->second = 0x08;
+	State->third = 0x05;
+
+	CsSetStates(cs, State);
+	for (BYTE i = 0; i < 16; ++i) {
+		BYTE res = Encrypt(cs, i);
+		printf("i = %x -> %x", i, res);
+		res = Decrypt(cs, res);
+		printf(" -> %x\n", res);
+	}*/
+	DWORD res;
+	BEGIN_PROTECT _32_KBYTE, _256_BYTE;
+	{
+		
+		_While(1)
+			
+		_Endw
+		
 		VM_MOV r0, [r1];
-		VM_MOV [0x00000004], ffffffff
+		VM_MOV [0x00000004], 123
+		VM_MOV [0x00000004], 0xfffffffe
 		//VM_MOV r0, [4]
-		//VM_ADD r0, 2
+		VM_ADD r5, 2
 		//VM_OR r0, 0x10
 		//VM_MOV r1, r0
 	}

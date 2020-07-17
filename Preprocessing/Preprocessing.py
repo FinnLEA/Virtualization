@@ -55,11 +55,17 @@ opcodes = {
             'POP'   : 0x0B
           }
 
+preffs = {
+            'ENIGMA'    : 0xe3,
+            'STATIC'    : 0x4a
+         }
+
 busyOpcodes = [0xbe, 0xac, 0x05, 0x4c, 0xb0]
 
 countOperands = 2
 szDefineOpsFunc = ''
 instructionPref = 0xe3 # standart pref for Enigma code
+flagStart = False
 
 cs = None
 
@@ -80,7 +86,8 @@ def MoveRotor_2(state:POINTER(STATE)) -> c_ubyte:
 
 def MoveRotor_3(state:POINTER(STATE)) -> c_ubyte:
     state.contents.third += 1
-    return mod16(state.contents.third)
+    state.contents.third = mod16(state.contents.third)
+    return state.contents.third
 
 def MoveEncryptRotors(cs:POINTER(CRYPTOSYSTEM)):
     
@@ -94,10 +101,11 @@ def MoveEncryptRotors(cs:POINTER(CRYPTOSYSTEM)):
 
 def EncryptByte(byte:int) -> int:
     global cs
-    byte = enigmaModule.Encrypt(cs, c_ubyte(byte))
+    encryptByte = enigmaModule.Encrypt(cs, c_ubyte(byte))
+    #encryptByte1 = enigmaModule.Decrypt(cs, c_ubyte(encryptByte))
    #enigmaModule.MoveEncryptRotors(cs)
-    MoveEncryptRotors(cs)
-    return byte
+    #MoveEncryptRotors(cs)
+    return encryptByte
 
 
 #--------------------------------------
@@ -160,6 +168,8 @@ def CopyState(machine:POINTER(MACHINE)):
 
 
 def ParseInitVM(Buf:str):
+    global flagStart
+    flagStart = True
     global cs
     matches = re.findall(r'([_]{1}[0-9]{1,}[_][a-zA-Z]*)', Buf)
     arg1 = matches[0]
@@ -224,32 +234,81 @@ def ParseEndVM(buf:str):
 #--------------------------------------
 #      Parse and insert operants
 
-def InsertOperandDefinition(szOp:str, type:int, isHex = False):
+opsDef = []
+
+def InsertOperandDefinition() -> str:
+    #outBuf = ''
+    #if type == optypes['reg'] or type == optypes['regaddr']:
+    #    #outBuf += 'define_operand(vm,' + str(type) + ',' + str(int(szOp) + 1) + ');\n'
+    #    return outBuf
+    #else:
+    #    #outBuf += 'define_operand(vm,' + str(type) + ','
+    #    #if isHex:
+    #    #    outBuf += '0x' + szOp + ');\n'
+    #    #else:
+    #    #    outBuf += szOp + ');\n'
+    #    outBuf += '_push_(vm,'
+    #    if isHex == True:
+    #        outBuf += '0x' + szOp + ');\n'
+    #    else:
+    #        outBuf += szOp + ');\n'
+    
+    #opsDef.append(outBuf)
+    global szDefineOpsFunc
+    szDefineOpsFunc = ''
+    if len(opsDef) == 2:
+        szDefineOpsFunc += opsDef[1]
+        szDefineOpsFunc += opsDef[0]
+    elif len(opsDef) == 1:
+        szDefineOpsFunc += opsDef[0]
+    else:
+        szDefineOpsFunc = ''
+
+    return szDefineOpsFunc
+
+def RememberOperandDefinition(szOp:str, type:int, encType:int = 0, isHex = False) -> str:   
     outBuf = ''
     if type == optypes['reg'] or type == optypes['regaddr']:
         #outBuf += 'define_operand(vm,' + str(type) + ',' + str(int(szOp) + 1) + ');\n'
         return outBuf
     else:
         #outBuf += 'define_operand(vm,' + str(type) + ','
-        #if hex:
+        #if isHex:
         #    outBuf += '0x' + szOp + ');\n'
         #else:
         #    outBuf += szOp + ');\n'
-        outBuf += '_push_(vm,'
-        if hex:
-            outBuf += '0x' + szOp + ');\n'
+        if isHex == True:
+            value = int(szOp, 16)
         else:
-            outBuf += szOp + ');\n'
+            value = int(szOp)
+        resValue = 0
+        for i in range(4):
+            #resValue <<= 8
+            rotate = (0xff << (i * 8))
+            if (value & rotate) != 0:
+                resValue |= ((((value & rotate) >> (i * 8)) ^ type) << (i * 8))
+            #value <<= 8
 
-    return outBuf
+        outBuf += '_push_(vm,'
+        if isHex == True:
+            resBytes = resValue.to_bytes(4, 'big')
+            resBuf = resBytes.hex()
+            outBuf += '0x' + resBuf + ');\n'
+        else:
+            resBuf = str(resValue)
+            outBuf += resBuf + ');\n'
     
+    opsDef.append(outBuf)
+
+    return 
 
 def EncryptOperandType(byte:int) -> int:
-    byte = EncryptByte(byte)
-    #byte <<= 4
-    #byte |= random.randint(0, 0x0f)
+    encryptedByte = EncryptByte(byte)
+    if byte == optypes['const'] or byte == optypes['constaddr']:
+        encryptedByte <<= 4
+        encryptedByte |= random.randint(0, 0x0f)
 
-    return byte
+    return encryptedByte
 
 def InsertOptype(buf:str):
     out = ''
@@ -260,8 +319,11 @@ def InsertOptype(buf:str):
         tmp = op[0]
         tmp = int(tmp)
         tmp += 1
-        szDefineOpsFunc += InsertOperandDefinition(op[0], type)
+        #exType = type
+        #szDefineOpsFunc += InsertOperandDefinition(op[0], type)
+        RememberOperandDefinition(op[0], type)
         type = EncryptOperandType(type)
+        
         type <<= 4
         type |= tmp
         byte = type.to_bytes(1, 'big')
@@ -275,7 +337,8 @@ def InsertOptype(buf:str):
         tmp = op[0]
         tmp = int(tmp)
         tmp += 1
-        szDefineOpsFunc += InsertOperandDefinition(op[0], type)
+       # szDefineOpsFunc += InsertOperandDefinition(op[0], type)
+        RememberOperandDefinition(op[0], type)
         type = EncryptOperandType(type)
         type <<= 4
         type |= tmp
@@ -287,14 +350,18 @@ def InsertOptype(buf:str):
     op = re.findall(r'\[0x([a-fA-F0-9]+)\]', buf)
     if len(op) != 0:
         type = optypes['constaddr']
-        type = EncryptOperandType(type)
-        byte1 = type.to_bytes(1, 'big')
+        value = op[0]
+        exType = type
+        type = EncryptOperandType(exType)
+        RememberOperandDefinition(value, exType, type, True)
+        #szDefineOpsFunc += InsertOperandDefinition(value, type, True)
+        szFirstByte = ''
+
         
+        byte1 = type.to_bytes(1, 'big')
         out += '__asm _emit 0x'
         out += byte1.hex() + '\n'
-        value = op[0]
-        szDefineOpsFunc += InsertOperandDefinition(value, type, True)
-        szFirstByte = ''
+        
         if len(value) > 1:
             szFirstByte = value[len(value) - 2] + value[len(value) - 1]
         else:
@@ -309,13 +376,15 @@ def InsertOptype(buf:str):
     op = re.findall(r'\[([a-fA-F0-9]+)\]', buf)
     if len(op) != 0:
         type = optypes['constaddr']
-        type = EncryptOperandType(type)
+        exType = type
+        type = EncryptOperandType(exType)
         byte1 = type.to_bytes(1, 'big')
         
         out += '__asm _emit 0x'
         out += byte1.hex() + '\n'
         value = op[0]
-        szDefineOpsFunc += InsertOperandDefinition(value, type, False)
+        RememberOperandDefinition(value, exType, type, False)
+        #szDefineOpsFunc += InsertOperandDefinition(value, type, False)
         szFirstByte = ''
         if len(value) > 1:
             szFirstByte = value[len(value) - 2] + value[len(value) - 1]
@@ -331,8 +400,10 @@ def InsertOptype(buf:str):
     op = re.findall(r'0x([0-9a-fA-F]+)', buf)
     if len(op) != 0:
         type = optypes['const']
-        type = EncryptOperandType(type)
-        szDefineOpsFunc += InsertOperandDefinition(op[0], type, True)
+        exType = type
+        type = EncryptOperandType(exType)
+        RememberOperandDefinition(op[0], exType, type, True)
+        #szDefineOpsFunc += InsertOperandDefinition(op[0], type, True)
         byte = type.to_bytes(1, 'big')
         
         out += '__asm _emit 0x'
@@ -342,8 +413,10 @@ def InsertOptype(buf:str):
     op = re.findall(r'([0-9a-fA-F]+)', buf)
     if len(op) != 0:
         type = optypes['const']
-        type = EncryptOperandType(type)
-        szDefineOpsFunc += InsertOperandDefinition(op[0], type, False)
+        exType = type
+        type = EncryptOperandType(exType)
+        RememberOperandDefinition(op[0], exType, type, False)
+        #szDefineOpsFunc += InsertOperandDefinition(op[0], type, False)
         byte = type.to_bytes(1, 'big')
         
         out += '__asm _emit 0x'
@@ -370,8 +443,8 @@ def ParseOperands(buf:str):
 
    # '[ ]{1,}([0-9a-z \[\]x]+), *([0-9a-z \[\]x]+)'
 
-    
-    
+    InsertOperandDefinition()
+    opsDef.clear()
 
     return outBuf
 
@@ -399,6 +472,15 @@ def InsertInstruction(buf:str):
     
     return outBuf
 
+def ParseCycle(buf:str) -> str:
+    outBuf = ''
+    global instructionPref
+    instructionPref -= 2
+
+    outBuf += buf
+
+    return outBuf
+
 #
 #   Читает файл в буфер
 #
@@ -421,6 +503,8 @@ def ParseFile(nameFile):
           #pos = tmp.find('VM_', 0)
             elif tmp.find('VM_', 0) != -1:
                 fdBuf += InsertInstruction(tmp)
+            elif tmp.find('_While', 0) != -1 and flagStart == True:
+                fdBuf += ParseCycle(tmp)
             elif tmp.find('END_PROTECT', 0) != -1:
                 fdBuf += ParseEndVM(tmp)
             else:
@@ -466,11 +550,23 @@ def ParseFile(nameFile):
 
 def main():
     #for file in sys.argv:\
-   ParseFile("../Virtualization/main.c")
-   return 0
+
+    #cs = enigmaModule.init_crypto(None)
+    #CopyState(cs.contents.encrypt)
+    #enigmaModule.CsSetRotors(cs, ctypes.cast(valuesForRotors[9], ctypes.POINTER(ctypes.c_ubyte)),
+    #                         ctypes.cast(valuesForRotors[7], ctypes.POINTER(ctypes.c_ubyte)),
+    #                         ctypes.cast(valuesForRotors[0x0b], ctypes.POINTER(ctypes.c_ubyte)))
+
+    #for i in range(16):
+    #    resenc = enigmaModule.Encrypt(cs, c_ubyte(i))
+    #    resdec = enigmaModule.Decrypt(cs, c_ubyte(resenc))
+    #    print(i, ' -> ', resenc, ' -> ', resdec)
+    
+    ParseFile("../Virtualization/main.c")
+    return 0
     
 
-
+ 
 
 if __name__ == "__main__":
     main()

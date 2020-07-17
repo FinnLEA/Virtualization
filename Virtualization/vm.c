@@ -78,34 +78,43 @@ uint32_t define_operand(vm_ptr vm, enum _types_ type, DWORD ex_type)
 		break;
 
 	case constaddr_:
-		_push_(vm, ((BYTE)(type) + ex_type)); // при подготовке операндов к инструкции берем (значение - тип из второго байта)  
+		//_push_(vm, ((BYTE)(type) + ex_type)); // при подготовке операндов к инструкции берем (значение - тип из второго байта)  
+		//(vm->DS + SIZE_DS + 
 		if (READ_MOF) {
+			WRITE_OP_DS(SECOND, ex_type);
 			vm->REG[r9] = (vm->REG[r9] << 16) | ((type << 8) + (ex_type & 0xff));
 		}
 		else if (READ_COF) {
+			WRITE_OP_DS(SECOND, ex_type);
 			vm->REG[r9] = (vm->REG[r9] << 16) | ((type << 8) + (ex_type & 0xff));
 		}
 		else if (READ_ROF) {
+			WRITE_OP_DS(SECOND, ex_type);
 			vm->REG[r9] = (vm->REG[r9] << 16) | ((type << 8) + (ex_type & 0xff));
 		}
 		else {
+			WRITE_OP_DS(FIRST, ex_type);
 			vm->REG[r9] = (type << 8) + (ex_type & 0xff);
 		}
 		WRITE_MOF(1);
 		break;
 
 	case const_: // в вирт. стек значение; в r9 2 байта: 1-ый байт - тип операнда, 2-ый байт - мусор
-		_push_(vm, ex_type);
+		//_push_(vm, ex_type);
 		if (READ_MOF) {
+			WRITE_OP_DS(SECOND, ex_type);
 			vm->REG[r9] = (vm->REG[r9] << 16) | ((type << 8) | 0xff);
 		}
 		else if (READ_COF) {
+			WRITE_OP_DS(SECOND, ex_type);
 			vm->REG[r9] = (vm->REG[r9] << 16) | ((type << 8) | 0xff);
 		}
 		else if (READ_ROF) {
+			WRITE_OP_DS(SECOND, ex_type);
 			vm->REG[r9] = (vm->REG[r9] << 16) | ((type << 8) | 0xff);
 		}
 		else {
+			WRITE_OP_DS(FIRST, ex_type);
 			vm->REG[r9] = ((type << 8) | 0xff);
 		}
 		WRITE_COF(1);
@@ -133,10 +142,15 @@ uint32_t define_operand(vm_ptr vm, enum _types_ type, DWORD ex_type)
 	return vm->REG[r9];
 }
 
+DWORD _get_secret_op_value_(vm_ptr vm, WORD value, DWORD* dst)
+{
+	return *dst = *((DWORD*)((BYTE*)(vm->DS + SIZE_DS + value)));
+}
+
 void _vm_init_(vm_ptr vm)
 {
 	DWORD size = 1 << (FLAG_SIZE_SS + 7);
-	vm->DS = (BYTE*)malloc(SIZE_DS);
+	vm->DS = (BYTE*)malloc(SIZE_DS + (sizeof(DWORD) * 2));
 	vm->SS = (uint32_t*)malloc(SIZE_SS);
 	vm->CS = (uint32_t*)malloc(12);
 
@@ -149,6 +163,8 @@ void _vm_init_(vm_ptr vm)
 	vm->REG[r9] = 0;
 }
 
+
+
 DWORD _vm_destruct_(vm_ptr vm)
 {
 	//free(vm->CS);
@@ -158,16 +174,32 @@ DWORD _vm_destruct_(vm_ptr vm)
 	
 	for (int i = 0; i < r9; ++i)
 		vm->REG[i] = 0;
+	FreeCs(vm->cs);
+	free(vm);
 	return 0;
 }
 
-DWORD GetValue(vm_ptr vm, OP* op){
+static DWORD DecodeValue(OP* operand) {
+	DWORD value = 0;
+	DWORD rotate = 0;
+	for (int i = 0; i < 4; ++i) {
+		rotate = (0xff << (i * 8));
+		if ((operand->value & rotate) != 0) {
+			value |= ((((operand->value & rotate) >> (i * 8)) ^ (operand->type >> 4)) << (i * 8));
+		}
+	}
+	return value;
+}
+
+static DWORD GetValue(vm_ptr vm, OP* op){
 	DWORD value = 0;
 	
-	switch (op->type)
+	switch (op->type >> 4)
 	{	
 	case constaddr_:
-		value = *((DWORD*)((BYTE*)(vm->DS + op->value)));
+		//DecodeValue(op);
+		//value = *((DWORD*)((BYTE*)(vm->DS + op->value)));
+		value = *((DWORD*)((BYTE*)(vm->DS + DecodeValue(op))));
 		break;
 
 	case regaddr_:
@@ -175,7 +207,8 @@ DWORD GetValue(vm_ptr vm, OP* op){
 		break;
 
 	case const_:
-		value = op->value;
+		//value = op->value;
+		value = DecodeValue(op);
 		break;
 
 	case reg_:
@@ -191,262 +224,100 @@ DWORD GetValue(vm_ptr vm, OP* op){
 	return value;
 }
 
-// void SetValue(vm_ptr vm, OP* op, DWORD value){
-// 	switch (op1->type)
-// 	{
-// 	case constaddr_:
-// 		*((DWORD*)((BYTE*)(vm->DS + op1->value))) = value;
-// 		break;
+ static void SetValue(vm_ptr vm, OP* op, DWORD value){
+ 	switch (op->type >> 4)
+ 	{
+ 	case constaddr_:
+ 		*((DWORD*)((BYTE*)(vm->DS + DecodeValue(op)))) = value;
+ 		break;
 
-// 	case const_:
-// 		//except;
-// 		return;
+ 	case const_:
+ 		//except;
+ 		return;
 
-// 	case regaddr_:
-// 		*(DWORD*)((BYTE*)(vm->DS + vm->REG[op2->type & 0x0f])) = value;
-// 		break;
+ 	case regaddr_:
+ 		*(DWORD*)((BYTE*)(vm->DS + vm->REG[op->type & 0x0f])) = value;
+ 		break;
 
-// 	case reg_:
-// 		vm->REG[(op1->type) & 0x0f] = value;
-// 		break;
-// 	default:
-// 		//except
-// 		break;
-// 	}
-// }
+ 	case reg_:
+ 		vm->REG[(op->type) & 0x0f] = value;
+ 		break;
+ 	default:
+ 		//except
+ 		break;
+ 	}
+ }
 
 void _vm_mov_(vm_ptr vm, OP* op1, OP* op2)
 {
 	DWORD tmp;
-	// switch (op2->type)
-	// {	
-	// case constaddr_:
-	// 	tmp = *((DWORD*)((BYTE*)(vm->DS + op2->value)));
-	// 	break;
-
-	// case regaddr_:
-	// 	tmp = *(DWORD*)((BYTE*)(vm->DS + vm->REG[op2->type & 0x0f]));
-	// 	break;
-
-	// case const_:
-	// 	tmp = op2->value;
-	// 	break;
-
-	// case reg_:
-	// 	tmp = vm->REG[(op2->type) & 0x0f];
-	// 	break;
-
-	// default:
-	// 	tmp = 0;
-	// 	//except
-	// 	break;
-	// }
 
 	tmp = GetValue(vm, op2);
+	SetValue(vm, op1, tmp);
 
-	switch (op1->type)
-	{
-	case constaddr_:
-		*((DWORD*)((BYTE*)(vm->DS + op1->value))) = tmp;
-		break;
-
-	case const_:
-		//except;
-		return;
-
-	case regaddr_:
-		*(DWORD*)((BYTE*)(vm->DS + vm->REG[op2->type & 0x0f])) = tmp;
-		break;
-
-	case reg_:
-		vm->REG[(op1->type) & 0x0f] = tmp;
-		break;
-	default:
-		//except
-		break;
-	}
-	
 }
 
 void _vm_add_(vm_ptr vm, OP * op1, OP * op2)
 {
-	DWORD tmp;
-	switch (op2->type)
-	{
-	case constaddr_:
-		tmp = *((DWORD*)((BYTE*)(vm->DS + op2->value)));
-		break;
+	DWORD val1, val2;
+	val1 = GetValue(vm, op1);
+	val2 = GetValue(vm, op2);
 
-	case regaddr_:
-		tmp = *(DWORD*)((BYTE*)(vm->DS + vm->REG[op2->type & 0x0f]));
-		break;
+	val1 += val2;
+	SetValue(vm, op1, val1);
 
-	case const_:
-		tmp = op2->value;
-		break;
-
-	default:
-		tmp = vm->REG[(op2->type) & 0x0f];
-		break;
-	}
-
-	switch (op1->type)
-	{
-	case constaddr_:
-		*((DWORD*)((BYTE*)(vm->DS + op1->value))) += tmp;
-		break;
-
-	case const_:
-		return;
-
-	default:
-		vm->REG[(op1->type) & 0x0f] += tmp;
-		break;
-	}
 }
 
 void _vm_sub_(vm_ptr vm, OP * op1, OP * op2)
 {
-	DWORD tmp;
-	switch (op2->type)
-	{
-	case constaddr_:
-		tmp = *((DWORD*)((BYTE*)(vm->DS + op2->value)));
-		break;
+	DWORD val1, val2;
+	val1 = GetValue(vm, op1);
+	val2 = GetValue(vm, op2);
 
-	case regaddr_:
-		tmp = *(DWORD*)((BYTE*)(vm->DS + vm->REG[op2->type & 0x0f]));
-		break;
-
-	case const_:
-		tmp = op2->value;
-		break;
-
-	default:
-		tmp = vm->REG[(op2->type) & 0x0f];
-		break;
-	}
-
-	switch (op1->type)
-	{
-	case constaddr_:
-		*((DWORD*)((BYTE*)(vm->DS + op1->value))) -= tmp;
-		break;
-
-	case const_:
-		return;
-
-	default:
-		vm->REG[(op1->type) & 0x0f] -= tmp;
-		break;
-	}
+	val1 -= val2;
+	SetValue(vm, op1, val1);
 }
 
 void _vm_xor_(vm_ptr vm, OP * op1, OP * op2)
 {
-	DWORD tmp;
-	switch (op2->type)
-	{
-	case constaddr_:
-		tmp = *((DWORD*)((BYTE*)(vm->DS + op2->value)));
-		break;
+	DWORD val1, val2;
+	val1 = GetValue(vm, op1);
+	val2 = GetValue(vm, op2);
 
-	case regaddr_:
-		tmp = *(DWORD*)((BYTE*)(vm->DS + vm->REG[op2->type & 0x0f]));
-		break;
-
-	case const_:
-		tmp = op2->value;
-		break;
-
-	default:
-		tmp = vm->REG[(op2->type) & 0x0f];
-		break;
-	}
-
-	switch (op1->type)
-	{
-	case constaddr_:
-		*((DWORD*)((BYTE*)(vm->DS + op1->value))) ^= tmp;
-		break;
-
-	case const_:
-		return;
-
-	default:
-		vm->REG[(op1->type) & 0x0f] ^= tmp;
-		break;
-	}
+	val1 ^= val2;
+	SetValue(vm, op1, val1);
 }
 
 void _vm_and_(vm_ptr vm, OP * op1, OP * op2)
 {
-	DWORD tmp;
-	switch (op2->type)
-	{
-	case constaddr_:
-		tmp = *((DWORD*)((BYTE*)(vm->DS + op2->value)));
-		break;
+	DWORD val1, val2;
+	val1 = GetValue(vm, op1);
+	val2 = GetValue(vm, op2);
 
-	case regaddr_:
-		tmp = *(DWORD*)((BYTE*)(vm->DS + vm->REG[op2->type & 0x0f]));
-		break;
-
-	case const_:
-		tmp = op2->value;
-		break;
-
-	default:
-		tmp = vm->REG[(op2->type) & 0x0f];
-		break;
-	}
-
-	switch (op1->type)
-	{
-	case constaddr_:
-		*((DWORD*)((BYTE*)(vm->DS + op1->value))) &= tmp;
-		break;
-
-	case const_:
-		return;
-
-	default:
-		vm->REG[(op1->type) & 0x0f] &= tmp;
-		break;
-	}
+	val1 &= val2;
+	SetValue(vm, op1, val1);
 }
 
 void _vm_or_(vm_ptr vm, OP * op1, OP * op2)
 {
-	DWORD tmp;
-	switch (op2->type)
-	{
-	case constaddr_:
-		tmp = *((DWORD*)((BYTE*)(vm->DS + op2->value)));
-		break;
+	DWORD val1, val2;
+	val1 = GetValue(vm, op1);
+	val2 = GetValue(vm, op2);
 
-	case const_:
-		tmp = op2->value;
-		break;
+	val1 |= val2;
+	SetValue(vm, op1, val1);
+}
 
-	default:
-		tmp = vm->REG[(op2->type) & 0x0f];
-		break;
-	}
+void _vm_push_(vm_ptr vm, OP * op1, OP * op2) {
+	DWORD tmp = 0;
+	tmp = GetValue(vm, op1);
+	_push_(vm, tmp);
+}
 
-	switch (op1->type)
-	{
-	case constaddr_:
-		*((DWORD*)((BYTE*)(vm->DS + op1->value))) |= tmp;
-		break;
-
-	case const_:
-		return;
-
-	default:
-		vm->REG[(op1->type) & 0x0f] |= tmp;
-		break;
-	}
+void _vm_pop_(vm_ptr vm, OP* op1, OP* op2) {
+	DWORD tmp = 0;
+	_pop_(vm, &tmp);
+	SetValue(vm, op1, tmp);
 }
 
 void _vm_call_(vm_ptr vm, DWORD addr) {
@@ -454,10 +325,22 @@ void _vm_call_(vm_ptr vm, DWORD addr) {
 }
 
 void _vm_mul_(vm_ptr vm, OP* op1, OP* op2){
+	DWORD val1, val2;
+	val1 = GetValue(vm, op1);
+	val2 = GetValue(vm, op2);
+
+	val1 *= val2;
+	SetValue(vm, op1, val1);
 	return;
 }
 
 void _vm_div_(vm_ptr vm, OP* op1, OP* op2){
+	DWORD val1, val2;
+	val1 = GetValue(vm, op1);
+	val2 = GetValue(vm, op2);
+
+	val1 /= val2;
+	SetValue(vm, op1, val1);
 	return;
 }
 

@@ -78,6 +78,7 @@ BYTE Encrypt(PCRYPTOSYSTEM cs, BYTE value);
 BYTE Decrypt(PCRYPTOSYSTEM cs, BYTE value);
 void CsSetStates(PCRYPTOSYSTEM cs, PSTATE startState);
 void CsSetRotors(PCRYPTOSYSTEM cs, ALPH rotor1, ALPH rotor2, ALPH rotor3);
+void FreeCs(PCRYPTOSYSTEM cs);
 
 #ifdef	__cplusplus
 }

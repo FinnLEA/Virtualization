@@ -114,7 +114,17 @@ enum _types_
 #define SIZE_SS				(1 << (FLAG_SIZE_SS + 7))
 #define SIZE_DS				(1 << (FLAG_SIZE_DS + 7))
 
+//------------
+
+#define	FIRST	0
+#define SECOND	4
+
+#define WRITE_OP_DS(number, val)		*((DWORD*)((BYTE*)(vm->DS + SIZE_DS + number))) = val 
+
 //----------------------
+
+
+
 typedef struct _VM_ 
 {
 	uint32_t* CS;
@@ -167,7 +177,7 @@ void _generate_opcode_table_();
 void _push_(vm_ptr, DWORD);
 void _pop_(vm_ptr vm, DWORD* dst);
 uint32_t define_operand(vm_ptr vm, enum _types_ type, DWORD ex_type);
-
+DWORD _get_secret_op_value_(vm_ptr vm, WORD value, DWORD* dst);
 
 void _vm_init_(vm_ptr vm);
 DWORD _vm_destruct_(vm_ptr vm);
@@ -178,8 +188,8 @@ void _vm_sub_(vm_ptr vm, OP* op1, OP* op2);
 void _vm_xor_(vm_ptr vm, OP* op1, OP* op2);
 void _vm_and_(vm_ptr vm, OP* op1, OP* op2);
 void _vm_or_(vm_ptr vm, OP* op1, OP* op2);
-void _vm_push_(vm_ptr vm, OP* op1);
-void _vm_pop_(vm_ptr vm, OP* op);
+void _vm_push_(vm_ptr vm, OP* op1, OP* op2);
+void _vm_pop_(vm_ptr vm, OP* op1, OP* op2);
 void _vm_call_(vm_ptr vm, OP* op);
 void _vm_mul_(vm_ptr vm, OP* op1, OP* op2);
 void _vm_div_(vm_ptr vm, OP* op1, OP* op2);

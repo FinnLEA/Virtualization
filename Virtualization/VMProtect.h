@@ -14,20 +14,20 @@
 #endif
 
 //----------------------
-#define r0		\
-	define_operand(vm, reg_, R0)
-#define r1		\
-	define_operand(vm, reg_, R1)
-#define r2		\
-	define_operand(vm, reg_, R2)
-#define r3		\
-	define_operand(vm, reg_, R3)
-#define r4		\
-	define_operand(vm, reg_, R4)
-#define r5		\
-	define_operand(vm, reg_, R5)
-#define r6		\
-	define_operand(vm, reg_, R6)
+#define r0		/*\
+	define_operand(vm, reg_, R0)*/
+#define r1		/*\
+	define_operand(vm, reg_, R1)*/
+#define r2		/*\
+	define_operand(vm, reg_, R2)*/
+#define r3		/*\
+	define_operand(vm, reg_, R3)*/
+#define r4		/*\
+	define_operand(vm, reg_, R4)*/
+#define r5		/*\
+	define_operand(vm, reg_, R5)*/
+#define r6		/*\
+	define_operand(vm, reg_, R6)*/
 
 /* ex. r1
 	v_sp <- type						ex.: sp-> 0x00000001 -> r1 // убрал

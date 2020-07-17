@@ -83,6 +83,25 @@ void CsSetRotors(PCRYPTOSYSTEM cs, ALPH rotor1, ALPH rotor2, ALPH rotor3) {
 	cs->decrypt->rotor_3 = cs->encrypt->rotor_3 = rotor3;
 }
 
+static void FreeMachine(PMACHINE pMachine) {
+	free(pMachine->curr_state);
+	free(pMachine->reflector);
+	free(pMachine->rotor_1);
+	free(pMachine->rotor_2);
+	free(pMachine->rotor_3);
+	free(pMachine->start_state);
+	
+	free(pMachine);
+}
+
+void FreeCs(PCRYPTOSYSTEM cs) {
+	FreeMachine(cs->decrypt);
+	FreeMachine(cs->encrypt);
+	free(cs->alph);
+
+	free(cs);
+}
+
 static void generate_rotor_value(ALPH rotor)
 {
 	BYTE tmp;
