@@ -138,14 +138,14 @@
     <ClCompile Include="vm.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Enigma.h" />
-    <ClInclude Include="protect.h" />
-    <ClInclude Include="Types.h" />
-    <ClInclude Include="vm.h" />
-    <ClInclude Include="VMProtect.h" />
+    <MASM Include="init_instruction.asm" />
   </ItemGroup>
   <ItemGroup>
-    <MASM Include="init_instruction.asm" />
+    <ClInclude Include="include\Enigma.h" />
+    <ClInclude Include="include\protect.h" />
+    <ClInclude Include="include\Types.h" />
+    <ClInclude Include="include\vm.h" />
+    <ClInclude Include="include\VMProtect.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

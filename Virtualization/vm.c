@@ -378,7 +378,7 @@ void _vm_pop_(VM_PTR vm, OP* op1, OP* op2) {
 	SetValue(vm, op1, tmp);
 }
 
-void _vm_call_(VM_PTR vm, DWORD addr) {
+void _vm_call_(VM_PTR vm, OP* op1, OP* op2) {
 	return;
 }
 

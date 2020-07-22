@@ -1,23 +1,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <Windows.h>
-#include "include/pcre.h"
-#include "include/pcreposix.h"
-
-#include "protect.h"
 
 
-//BEGIN_PROTECT _1_KBYTE, _256_BYTE
-//{
-//	DWORD res1;
-//	VM_MOV r0, r1;
-//	VM_MOV [0x123454], ffffffff
-//	VM_MOV r0, [4]
-//	VM_ADD r0, 2
-//	VM_OR r0, 0x10
-//	VM_MOV r1, r0
-//}
-//END_PROTECT(res);
+#include "include\protect.h"
+
+
+
 
 #ifdef  _WIN64
 
@@ -446,7 +435,7 @@ int main() {
 	//	_If(1)
 	//		VM_MOV r1, 0
 	//	_endif
-
+	//
 	//	_For(int i = 0; i < 5; ++i)
 	//		VM_ADD r1, 5
 	//		VM_MUL r1, 2

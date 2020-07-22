@@ -16,9 +16,9 @@
 #ifdef _WIN64 // для проверки работоспособности криптосистемы (из DLL)
 #include "../Enigma/Enigma.h"
 #else
-#include "include\Enigma.h"
+#include "Enigma.h"
 #endif
-#include "include\Types.h"
+#include "Types.h"
 
 #ifdef _WIN64 
 #define Cip		Rip

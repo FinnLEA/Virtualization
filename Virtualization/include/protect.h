@@ -18,16 +18,27 @@
 //
 
 #define VM_MOV
+#define vm_mov
 #define VM_OR
+#define vm_or
 #define VM_AND
+#define vm_and
 #define VM_XOR
+#define vm_xor
 #define VM_ADD
+#define vm_add
 #define VM_SUB
+#define vm_sub
 #define VM_CALL
+#define vm_call
 #define VM_PUSH
+#define vm_push
 #define VM_POP
+#define vm_pop
 #define VM_MUL
+#define vm_mul
 #define VM_DIV
+#define vm_div
 
 //---------------------------
 //	Registers

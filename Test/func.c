@@ -1,0 +1,11 @@
+BEGIN_PROTECT _1_KBYTE, _256_BYTE
+{
+	DWORD res1;
+	VM_MOV r0, r1;
+	VM_MOV [0x123454], ffffffff
+	VM_MOV r0, [4]
+	VM_ADD r0, 2
+	VM_OR r0, 0x10
+	VM_MOV r1, r0
+}
+END_PROTECT(res);
