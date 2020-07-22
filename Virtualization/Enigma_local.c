@@ -1,46 +1,16 @@
+/*-----------------------------------------------------------------------------
+
+	Модуль реализации потокового шифрования
+
+-----------------------------------------------------------------------------*/
+
+
 #include "Enigma.h"
 
-//void generic_keys() {
-//	srand(time(NULL));
-//
-//	BYTE alf_for_keys[] =
-//	{
-//		0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
-//	};
-//
-//	cs.keys.first = alf_for_keys[0] + rand() % alf_for_keys[15];
-//	cs.keys.second = alf_for_keys[0] + rand() % alf_for_keys[15];
-//	if (cs.keys.first == cs.keys.second)
-//		cs.keys.second = alf_for_keys[0] + rand() % alf_for_keys[15];
-//
-//	cs.keys.third = alf_for_keys[0] + rand() % alf_for_keys[15];
-//	if (cs.keys.third == cs.keys.second || cs.keys.third == cs.keys.first)
-//		cs.keys.third = alf_for_keys[0] + rand() % alf_for_keys[15];
-//
-//}
 
-
-//
-//
-//static void generic_keys()
-//{
-//	srand(time(NULL));
-//
-//	BYTE alf_for_keys[] =
-//	{
-//		0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
-//	};
-//
-//	cs.keys.first = alf_for_keys[0] + rand() % alf_for_keys[15];
-//	cs.keys.second = alf_for_keys[0] + rand() % alf_for_keys[15];
-//	if(cs.keys.first == cs.keys.second)
-//		cs.keys.second = alf_for_keys[0] + rand() % alf_for_keys[15];
-//
-//	cs.keys.third = alf_for_keys[0] + rand() % alf_for_keys[15];
-//	if (cs.keys.third == cs.keys.second || cs.keys.third == cs.keys.first)
-//		cs.keys.third = alf_for_keys[0] + rand() % alf_for_keys[15];
-//}
-
+//---------------------------------------------------------
+/*		Definitions functions		*/
+//---------------------------
 
 static void generic_start_state(PCRYPTOSYSTEM cs)
 {
@@ -51,11 +21,11 @@ static void generic_start_state(PCRYPTOSYSTEM cs)
 	//start_state->second = cs->alph[0] + rand() % cs->alph[15];
 	//while (start_state->first == start_state->second)
 	//	start_state->second = cs->alph[0] + rand() % cs->alph[15];
-
+	 //
 	//start_state->third = cs->alph[0] + rand() % cs->alph[15];
 	//while (start_state->third == start_state->second || start_state->third == start_state->first)
 	//	start_state->third = cs->alph[0] + rand() % cs->alph[15];
-
+	 //
 	//cs->decrypt->start_state = start_state;
 	//cs->encrypt->start_state = start_state;
 	// 
@@ -327,3 +297,5 @@ BYTE Decrypt(PCRYPTOSYSTEM cs, BYTE value) {
 
 	return res;
 }
+
+//---------------------------------------------------------

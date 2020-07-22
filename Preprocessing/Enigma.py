@@ -1,3 +1,11 @@
+#------------------------------------------------------------------------------
+#
+#   Модуль реализации потокового шифрования 
+#   с помощью Enigma.dll и модуля 'ctypes'
+#
+#------------------------------------------------------------------------------
+
+
 import sys
 import random
 
@@ -10,6 +18,7 @@ enigmaModule = ctypes.WinDLL('../Enigma/bin/x64/enigma64.dll')
 
 #------------------------------------------------
 #       STRUCTURES
+#----------------------------
 
 class STATE(ctypes.Structure):
     _fields_ = [('first',   ctypes.c_ubyte),
@@ -31,11 +40,13 @@ class CRYPTOSYSTEM(ctypes.Structure):
     _fields_ = [('alph',    ctypes.POINTER(ctypes.c_ubyte)),
                 ('encrypt', ctypes.POINTER(MACHINE)),
                 ('decrypt', ctypes.POINTER(MACHINE))]
-   
+
+#------------------------------------------------   
     
 
 #------------------------------------------------
 #       FUNCTIONS
+#----------------------------
 
 # PCRYPTOSYSTEM init_crypto()
 enigmaModule.init_crypto.restype = POINTER(CRYPTOSYSTEM)
@@ -86,4 +97,4 @@ def MoveEncryptRotors(cs:POINTER(CRYPTOSYSTEM)):
     
     return
 
-
+#------------------------------------------------

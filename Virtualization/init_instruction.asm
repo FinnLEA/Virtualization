@@ -1,5 +1,17 @@
+;------------------------------------------------------------------------------
+;
+;		Инициализация операндов инструкций
+;
+;------------------------------------------------------------------------------
+
+
 .686
 .model flat, c
+
+
+;----------------------------------------------------------
+;		Consts and macroses
+;----------------------------
 
 ; доступ к vm->r9 адрес в eax
 _vr9 macro vm_
@@ -14,41 +26,28 @@ endm
 FIRST	equ 0
 SECOND	equ 4
 
-;FLAG_DS	macro vm_
-	;vm_ + 0ch
-;endm
-;
-;SIZE_DS macro vm_
-	;
-	;mov ebx, vm_
-	;add ebx, 0Ch ;vn->REG[EFLAGS]
-	;mov eax, ebx
-	;1 shl (FLAG_DS + 7)
-;
-;endm
-;
-;READ_OP_DS macro vm_, number, dst
-	;
-	;mov ebx, vm_
-	;add ebx, 08h
-	;mov eax, ebx
-;
-;
-;endm
 
 .data
 
 
 .code 
 
+
+;----------------------------------------------------------
+;		Prototypes
+;----------------------------
+
 _push_	proto c :PTR DWORD, :DWORD
 _pop_	proto c :PTR DWORD, :PTR DWORD
 _get_secret_op_value_ proto c :PTR DWORD, :WORD, :PTR DWORD
-;
-;foo proc
-	;
-;foo endp
-;
+
+;----------------------------------------------------------
+
+
+;----------------------------------------------------------
+;		Definitions functions
+;----------------------------
+
 _init_ops_ proc vm:ptr DWORD, op1:PTR DWORD, op2:PTR DWORD
 	
 	_vr9(vm)
@@ -107,7 +106,8 @@ _init_ops_ proc vm:ptr DWORD, op1:PTR DWORD, op2:PTR DWORD
 
 	ret
 _init_ops_ endp
-;
+
+
 _init_operand_ proc vm:ptr DWORD, op:PTR DWORD
 	
 	_vr9(vm)
@@ -148,5 +148,7 @@ _init_operand_ proc vm:ptr DWORD, op:PTR DWORD
 	ret
 
 _init_operand_ endp
+
+;----------------------------------------------------------
 
 end

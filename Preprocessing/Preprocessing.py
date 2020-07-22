@@ -1,3 +1,10 @@
+#------------------------------------------------------------------------------
+#
+#   Скрипт препроцессора виртуальной машины
+#
+#------------------------------------------------------------------------------
+
+
 import re
 import sys
 from Enigma import *
@@ -9,26 +16,22 @@ import struct
 
 
 
+
+#----------------------------------------------------------
+#       Global variables
+#----------------------------
+
 base = [
 		0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
 	   ]
 
-#--------------------------------------
-
-instructionPattern = { 
-                       'VM_MOV', 
-                       'VM_AND',
-                       'VM_OR',
-                       'VM_XOR',
-                       'VM_ADD',
-                       'VM_SUB' 
-                     }
 
 optypes = { 
             'reg'         : 0x01,
             'constaddr'   : 0x02,
             'const'       : 0x03,
-            'regaddr'     : 0x04
+            'regaddr'     : 0x04,
+            'useraddr'    : 0x05
           }
 
 regnum = { 
@@ -74,16 +77,22 @@ mode = 0  # 0 - Enigma, 1 - Static
 
 indexForStatic = 0
 
+#----------------------------------------------------------
+
+
+#----------------------------------------------------------
+#       Functions
+#----------------------------
 
 def EncryptByte(byte:int) -> int:
     global cs
     encryptByte = enigmaModule.Encrypt(cs, c_ubyte(byte))
-    #encryptByte1 = enigmaModule.Decrypt(cs, c_ubyte(encryptByte))
-   #enigmaModule.MoveEncryptRotors(cs)
+
     #MoveEncryptRotors(cs)
     return encryptByte
 
-#--------------------------------------
+
+#----------------------------------------------------------
 #      Parse and insert instructions
 
 def EncryptOpcode(opcode:int) -> int:
@@ -113,6 +122,7 @@ def InsertOpcode(instrName:str) -> str:
     outStr += byte.hex() + '\n'
     return outStr
 
+
 #--------------------------------------
 #      Parse and insert preffix
 
@@ -129,16 +139,6 @@ def InsertPref():
     return outStr
     
 
-#
-#   Проверяет на наличие нужной строки
-#
-def FindInstruction(str, fdBuf):
-    for instr in instructionPattern:
-        if str.find(instr) != -1:
-            return True
-    return False          
-
-
 #----------------------------------------
 #      Parse and insert start instruction
 
@@ -150,7 +150,7 @@ def CopyState(machine:POINTER(MACHINE)):
     return
 
 
-def ParseInitVM(Buf:str):
+def ParseInitVM(Buf:str) -> str:
     global flagStart
     flagStart = True
     global cs
@@ -204,15 +204,17 @@ def ParseInitVM(Buf:str):
 
     return outBuf
 
+
 #--------------------------------------
 #      Parse and insert end of VM block
 
-def ParseEndVM(buf:str):
+def ParseEndVM(buf:str) -> str:
     outBuf = '}\n__except(Handler(GetExceptionInformation())){\n'
     outBuf += '_vm_destruct_(vm);\n}\n}'
 
 
     return outBuf
+
 
 #--------------------------------------
 #      Parse and insert operants
@@ -220,23 +222,6 @@ def ParseEndVM(buf:str):
 opsDef = []
 
 def InsertOperandDefinition() -> str:
-    #outBuf = ''
-    #if type == optypes['reg'] or type == optypes['regaddr']:
-    #    #outBuf += 'define_operand(vm,' + str(type) + ',' + str(int(szOp) + 1) + ');\n'
-    #    return outBuf
-    #else:
-    #    #outBuf += 'define_operand(vm,' + str(type) + ','
-    #    #if isHex:
-    #    #    outBuf += '0x' + szOp + ');\n'
-    #    #else:
-    #    #    outBuf += szOp + ');\n'
-    #    outBuf += '_push_(vm,'
-    #    if isHex == True:
-    #        outBuf += '0x' + szOp + ');\n'
-    #    else:
-    #        outBuf += szOp + ');\n'
-    
-    #opsDef.append(outBuf)
     global szDefineOpsFunc
     szDefineOpsFunc = ''
     if len(opsDef) == 2:
@@ -255,11 +240,6 @@ def RememberOperandDefinition(szOp:str, type:int, encType:int = 0, isHex = False
         #outBuf += 'define_operand(vm,' + str(type) + ',' + str(int(szOp) + 1) + ');\n'
         return outBuf
     else:
-        #outBuf += 'define_operand(vm,' + str(type) + ','
-        #if isHex:
-        #    outBuf += '0x' + szOp + ');\n'
-        #else:
-        #    outBuf += szOp + ');\n'
         if isHex == True:
             value = int(szOp, 16)
         else:
@@ -296,7 +276,7 @@ def EncryptOperandType(byte:int) -> int:
             encryptedByte |= random.randint(0, 0x0f)
     return encryptedByte
 
-def InsertOptype(buf:str):
+def InsertOptype(buf:str) -> str:
     out = ''
     global szDefineOpsFunc
     op = re.findall(r'\[r([0-9]+)\]', buf)
@@ -411,7 +391,7 @@ def InsertOptype(buf:str):
 
     return ''
 
-def ParseOperands(buf:str):
+def ParseOperands(buf:str) -> str:
     outBuf = ''
     ops = []
     
@@ -433,6 +413,7 @@ def ParseOperands(buf:str):
     opsDef.clear()
 
     return outBuf
+
 
 #--------------------------------------
 #      Insert full instructions
@@ -460,12 +441,44 @@ def InsertInstruction(buf:str) -> str:
 
 
 #--------------------------------------
-#       Handle While
+#       Handle Static code
+
+def SetMode(newMode:int):
+    global instructionPref
+    global oldPref
+    global mode
+
+    mode = newMode
+    if newMode == 1:
+        oldPref = instructionPref
+        instructionPref = preffs['STATIC']
+    elif newMode == 0:
+        if oldPref == preffs['ENIGMA']:
+            instructionPref = oldPref
+        else:
+            instructionPref = preffs['ENIGMA']
+
+    return
+
+def ParseStaticCode(buf:str) -> str:
+    outBuf = ''
+    
+    SetMode(1)
+
+    outBuf += buf
+
+    return outBuf
+
+
+#--------------------------------------
+#       Handle Cycle
 
 def ParseCycle(buf:str) -> str:
     outBuf = ''
-    global instructionPref
-    instructionPref -= 2
+    #global instructionPref
+    #instructionPref -= 2
+
+    SetMode(1)
 
     outBuf += buf
 
@@ -473,8 +486,10 @@ def ParseCycle(buf:str) -> str:
 
 def ParseEndCycle(buf:str) -> str:
     outBuf = ''
-    global instructionPref
-    instructionPref += 2
+    #global instructionPref
+    #instructionPref += 2
+
+    SetMode(0)
 
     outBuf += buf
     
@@ -482,39 +497,31 @@ def ParseEndCycle(buf:str) -> str:
 
 
 #--------------------------------------
-#       Handle Static code
-def ParseStaticCode(bif:str) -> str:
-    outBuf = ''
-    global instructionPref
-    global oldPref
-    global mode
-
-    mode = 1
-    oldPref = instructionPref
-    instructionPref = preffs['STATIC']
-
-    return outBuf
-
+#       Handle If - Else
 
 def ParseEndStaticCode(buf:str) -> str:
     outBuf = ''
-    global instructionPref
-    global oldPref
-    global mode 
-
-    mode = 0
     
-    if oldPref == preffs['ENIGMA']:
-        instructionPref = oldPref
-    else:
-        instructionPref = preffs['ENIGMA']
+    SetMode(0)    
+
+    outBuf += buf
     
     return outBuf
 
 
-#
-#   Читает файл в буфер
-#
+def ParseIfElse(buf:str, Mode:int) -> str:
+    outBuf = ''
+
+    SetMode(not Mode)
+
+    outBuf += buf
+
+    return outBuf
+
+
+#--------------------------------------
+#       Pasre file
+
 def ParseFile(nameFile):
     
     #fdBuf = fdFrom.read()
@@ -526,22 +533,27 @@ def ParseFile(nameFile):
         tmp = ""
         for string in fdFrom:       
             tmp = string
-          #pos = tmp.find('BEGIN_PROTECT', 0)
+
             if tmp.find('//', 0) != -1:
                 continue
             if tmp.find('BEGIN_PROTECT', 0) != -1:
                 fdBuf += ParseInitVM(tmp)
-          #pos = tmp.find('VM_', 0)
             elif tmp.find('VM_', 0) != -1 and flagStart == True:
                 fdBuf += InsertInstruction(tmp)
-            elif tmp.find('_While', 0) != -1 and flagStart == True:
+            elif (tmp.find('_While', 0) != -1 or tmp.find('_For', 0) !=-1) and flagStart == True:
                 fdBuf += ParseCycle(tmp)
             elif (tmp.find('STATIC_CODE', 0) != -1 or tmp.find('static_code', 0) != -1) and flagStart == True:
                 fdBuf += ParseStaticCode(tmp)
             elif (tmp.find('ENDS', 0) != -1 or tmp.find('ends', 0) != -1) and flagStart == True:
                  fdBuf += ParseEndStaticCode(tmp)
-            elif tmp.find('_Endw', 0) != -1 and flagStart == True:
+            elif (tmp.find('_Endw', 0)!= -1 or tmp.find('_endfor', 0) != -1) and flagStart == True:
                 fdBuf += ParseEndCycle(tmp)
+            elif tmp.find('_If', 0) != -1  and flagStart == True:
+                 fdBuf += ParseIfElse(tmp, 0)
+            elif tmp.find('_Elif', 0) != -1 and flagStart == True:
+                fdBuf += ParseIfElse(tmp , 0)
+            elif (tmp.find('_endif', 0) != -1 or tmp.find('_ENDIF', 0) != -1) and flagStart == True:
+                fdBuf += ParseIfElse(tmp, 1)
             elif tmp.find('END_PROTECT', 0) != -1 and flagStart == True:
                 fdBuf += ParseEndVM(tmp)
             else:
@@ -568,9 +580,7 @@ def GenerateRotorValue():
     alf = range(0, 0x100)
     local_base = list(alf)
     print('[', end =' ')
-    for val in range(11):
-        
-               
+    for val in range(11):                     
         num_el_array = random.randint(0, countFreeBase)
         value = local_base[num_el_array]
         
@@ -595,21 +605,22 @@ def GenerateRotorValue():
 
 
 def main():
-    #for file in sys.argv:\
 
+    for param in sys.argv:
+        ParseFile(param)
+        
     #cs = enigmaModule.init_crypto(None)
     #CopyState(cs.contents.encrypt)
     #enigmaModule.CsSetRotors(cs, ctypes.cast(valuesForRotors[9], ctypes.POINTER(ctypes.c_ubyte)),
     #                         ctypes.cast(valuesForRotors[7], ctypes.POINTER(ctypes.c_ubyte)),
     #                         ctypes.cast(valuesForRotors[0x0b], ctypes.POINTER(ctypes.c_ubyte)))
-
     #for i in range(16):
     #    resenc = enigmaModule.Encrypt(cs, c_ubyte(i))
     #    resdec = enigmaModule.Decrypt(cs, c_ubyte(resenc))
     #    print(i, ' -> ', resenc, ' -> ', resdec)
     #for i in range(0, 0x0f):
     #    GenerateRotorValue() 
-    ParseFile("../Virtualization/main.c")
+    
 
     return 0
     

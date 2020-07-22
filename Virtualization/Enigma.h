@@ -1,3 +1,10 @@
+/*-----------------------------------------------------------------------------
+	
+	Модуль реализации потокового шифрования 
+
+-----------------------------------------------------------------------------*/
+
+
 #ifndef _ENIGMA_H_
 #define _ENIGMA_H_
 
@@ -13,12 +20,12 @@ extern "C" {
 
 #define	TESTMODE	1
 
-//----------------------
+
+//---------------------------------------------------------
+/*		Structures adn typedefs		*/
+//---------------------------
 
 typedef BYTE*	ALPH;
-
-//----------------------
-
 
 #pragma pack(push, 1)
 typedef struct _keys_
@@ -29,19 +36,6 @@ typedef struct _keys_
 } STATE, *PSTATE;
 #pragma pack(pop)
 
-//typedef struct _encrypt_
-//{
-//	PSTATE start_state;
-//	ALPH alph;
-//	ALPH rotor_1;
-//	ALPH rotor_2;
-//	ALPH rotor_3;
-//	ALPH reflector;
-//#if TESTMODE
-//	STATE curr_state;
-//#endif
-//
-//} ENCRYPT, *PENCRYPT;
 
 typedef struct _machine_
 {
@@ -66,12 +60,22 @@ typedef struct _cryptosysytem_
 
 }CRYPTOSYSTEM, *PCRYPTOSYSTEM;
 
-//----------------------
+//---------------------------------------------------------
+
+
+//---------------------------------------------------------
+/*		Consts and macroses		*/
+//---------------------------
 
 #define GET_CURR_STATE(CryptoSystem, MachineType, Rotor)	\
 	CryptoSystem->MachineType->curr_state->Rotor
 
-//----------------------
+//---------------------------------------------------------
+
+
+//---------------------------------------------------------
+/*		Declarations functions		*/
+//---------------------------
 
 PCRYPTOSYSTEM init_crypto();
 BYTE Encrypt(PCRYPTOSYSTEM cs, BYTE value);
@@ -79,6 +83,9 @@ BYTE Decrypt(PCRYPTOSYSTEM cs, BYTE value);
 void CsSetStates(PCRYPTOSYSTEM cs, PSTATE startState);
 void CsSetRotors(PCRYPTOSYSTEM cs, ALPH rotor1, ALPH rotor2, ALPH rotor3);
 void FreeCs(PCRYPTOSYSTEM cs);
+
+//---------------------------------------------------------
+
 
 #ifdef	__cplusplus
 }

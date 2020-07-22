@@ -1,39 +1,41 @@
-#pragma once
+/*-----------------------------------------------------------------------------
+
+	Реализация внутренней архитектуры виртуальной машины
+
+-----------------------------------------------------------------------------*/
+
+
+#ifndef _VM_H_
+#define _VM_H_
 
 #include <stdio.h>
 #include <io.h>
 #include <stdlib.h>
 #include <memory.h>
 
-#ifdef _WIN64
+#ifdef _WIN64 // для проверки работоспособности криптосистемы (из DLL)
 #include "../Enigma/Enigma.h"
 #else
 #include "Enigma.h"
 #endif
 #include "Types.h"
 
+#ifdef _WIN64 
+#define Cip		Rip
+#define GET_BYTE_CIP(ContextRecord)	(BYTE)*((DWORD*)ContextRecord->Cip)
+#else
+#define Cip		Eip
+#define GET_BYTE_CIP(ContextRecord)	(BYTE)*((DWORD*)ContextRecord->Cip)
+#endif
 
 
-//----------------------
+
+//---------------------------------------------------------
+/*		Structures adn typedefs		*/
+//---------------------------
+
 typedef BYTE			op_type;
 
-//----------------------
-//
-//#pragma pack(push, 1)
-//typedef struct _keys_
-//{
-//	BYTE first;
-//	BYTE second;
-//	BYTE third;
-//} KEYS, *PKEYS;
-//#pragma pack(pop)
-//
-//static KEYS keys;
-////----------------------
-//
-//static void genric_keys();
-
-//----------------------
 
 #pragma pack(push, 1)
 typedef struct _OP_ 
@@ -52,7 +54,26 @@ enum _types_
 	
 };
 
-//----------------------
+typedef void(*instrFunc)(void* pArg);
+
+typedef struct _VM_
+{
+	uint32_t* CS;
+	uint32_t* SS;
+	BYTE* DS;
+
+	uint32_t REG[12];
+
+	PCRYPTOSYSTEM cs;
+
+} VM, * VM_PTR;
+
+//---------------------------------------------------------
+
+
+//---------------------------------------------------------
+/*		Consts and macroses		*/
+//---------------------------
 
 #define R0		1
 #define R1		2
@@ -67,9 +88,9 @@ enum _types_
 #define	r9		10
 #define r10		11
 #define COUNT_REGS r10
-																								// ���� ����������, �� ����� � ������(4 ���� �������� (�� ������ 32 �����)
-#define FLAGS	0		/*									  |	CEF | EIF | COF | MOF |	ROF | 	?	  |	DS     |size SS (0_0 - 128 byte, 0_1 - 256 bytes, 1_0 - 512 bytes, 1_1 - 1024 bytes)
-							_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ |  _  |  _  |  _  |  _  |  _  | _ _ _ _ |_ _ _ _ | _ _
+																								
+#define FLAGS	0		/*									  |	CEF | EIF | COF | MOF |	ROF | 	?	  |	size DS |size SS (0_0 - 128 byte, 0_1 - 256 bytes, 1_0 - 512 bytes, 1_1 - 1024 bytes)
+							_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ |  _  |  _  |  _  |  _  |  _  | _ _ _ _ | _ _ _ _ | _ _
 																
 															- MOF - memory operand flag (11)
 															- COF - const operand flag (12)
@@ -77,6 +98,11 @@ enum _types_
 															- EIF - Execute Instruction Flag (13)
 															- CEF - Cycle Execution Flag (14)
 						*/	
+
+//---------------------------
+//
+//	Macroses for FLAGS register		
+//
 
 #define ROR(val, step)		((val >> step) | (val << (32 - step)))
 #define ROL(val, step)		((val << step) | (val >> (32 - step)))	
@@ -105,7 +131,12 @@ enum _types_
 #define WRITE_CEF(bits)		(vm->REG[FLAGS] = ROL(((FLAG_EIF & 0xfffffffe) | bits), 14))
 
 
-//----------------------
+//---------------------------
+//
+//	Consts and macroses 
+//	for virtual segments
+//
+
 #define _128_B_		0
 #define _256_B_		1
 #define _512_B_		2
@@ -130,37 +161,18 @@ enum _types_
 
 //----------------------
 
-#define READ_CURR_INSTR		
+//#define READ_CURR_INSTR		
 
 //----------------------
 
+//---------------------------------------------------------
 
 
-typedef struct _VM_ 
-{
-	uint32_t* CS;
-	uint32_t* SS;
-	BYTE* DS;
-
-	uint32_t REG[12];
-
-	PCRYPTOSYSTEM cs;
-
-} vm_, *vm_ptr;
+//---------------------------------------------------------
+/*		Global variables		*/
+//---------------------------
 
 #define COUNT_INSTRUCTIONS	11
-
-#define _MOV_OPCODE_		\
-	{ 0x00, 0x01, 0x00, 0x00 }
-
-#define _ADD_OPCODE_		\
-	{ 0x00, 0x02, 0x00, 0x00 }
-
-#define OPCODE_TABLE		\
-	{\
-		_MOV_OPCODE_, \
-		_ADD_OPCODE_ \
-	}
 
 
 #define	COUNT_START_OPCODES		5
@@ -177,36 +189,53 @@ extern BYTE startOpcodes[COUNT_START_OPCODES];
 */
 
 extern BYTE valuesForRotors[16][16];
-extern BYTE staticOpcodes[16][11];
+extern BYTE staticOpcodes[16][COUNT_INSTRUCTIONS];
 extern BYTE staticOpTypes[16][4];
 
+//---------------------------------------------------------
 
 
-#define INTSR_COUNT	43
-//static uint32_t** opcode_table;
-static BYTE table[4][4] = OPCODE_TABLE;
-//----------------------
-void _generate_opcode_table_();
+//---------------------------------------------------------
+/*		Declarations functions		*/
+//---------------------------
+
+
 BYTE FindInOpcodeTable(BYTE opcode, BYTE index);
 BYTE FindInOpTypeTable(BYTE operandByte, BYTE index);
-void _push_(vm_ptr, DWORD);
-void _pop_(vm_ptr vm, DWORD* dst);
-uint32_t define_operand(vm_ptr vm, enum _types_ type, DWORD ex_type);
-DWORD _get_secret_op_value_(vm_ptr vm, WORD value, DWORD* dst);
+void _push_(VM_PTR, DWORD);
+void _pop_(VM_PTR vm, DWORD* dst);
+uint32_t define_operand(VM_PTR vm, enum _types_ type, DWORD ex_type);
+DWORD _get_secret_op_value_(VM_PTR vm, WORD value, DWORD* dst);
 
-void _vm_init_(vm_ptr vm);
-DWORD _vm_destruct_(vm_ptr vm);
+void _vm_init_(VM_PTR vm);
+DWORD _vm_destruct_(VM_PTR vm);
 
-void _vm_mov_(vm_ptr vm, OP* op1, OP* op2);
-void _vm_add_(vm_ptr vm, OP* op1, OP* op2);
-void _vm_sub_(vm_ptr vm, OP* op1, OP* op2);
-void _vm_xor_(vm_ptr vm, OP* op1, OP* op2);
-void _vm_and_(vm_ptr vm, OP* op1, OP* op2);
-void _vm_or_(vm_ptr vm, OP* op1, OP* op2);
-void _vm_push_(vm_ptr vm, OP* op1, OP* op2);
-void _vm_pop_(vm_ptr vm, OP* op1, OP* op2);
-void _vm_call_(vm_ptr vm, OP* op);
-void _vm_mul_(vm_ptr vm, OP* op1, OP* op2);
-void _vm_div_(vm_ptr vm, OP* op1, OP* op2);
-void _vm_init_cs_(vm_ptr vm, BYTE op1, BYTE op2, BYTE op3);
+//---------------------------
+//
+//	Instructions
+//
 
+void _vm_mov_(VM_PTR vm, OP* op1, OP* op2);
+void _vm_add_(VM_PTR vm, OP* op1, OP* op2);
+void _vm_sub_(VM_PTR vm, OP* op1, OP* op2);
+void _vm_xor_(VM_PTR vm, OP* op1, OP* op2);
+void _vm_and_(VM_PTR vm, OP* op1, OP* op2);
+void _vm_or_(VM_PTR vm, OP* op1, OP* op2);
+void _vm_push_(VM_PTR vm, OP* op1, OP* op2);
+void _vm_pop_(VM_PTR vm, OP* op1, OP* op2);
+void _vm_call_(VM_PTR vm, OP* op);
+void _vm_mul_(VM_PTR vm, OP* op1, OP* op2);
+void _vm_div_(VM_PTR vm, OP* op1, OP* op2);
+void _vm_init_cs_(VM_PTR vm, BYTE op1, BYTE op2, BYTE op3);
+
+//---------------------------
+//
+//	Handle VM - instructions
+//
+
+int Handler(EXCEPTION_POINTERS* pException, VM_PTR vm);
+
+//---------------------------------------------------------
+
+
+#endif // _VM_H_

@@ -1,9 +1,15 @@
+/*-----------------------------------------------------------------------------
+
+	Модуль реализации потокового шифрования для DLL
+
+-----------------------------------------------------------------------------*/
+
 #ifndef _ENIGMA_H_
 #define _ENIGMA_H_
 
 #ifdef __cplusplus
 extern "C" {
-#endif
+#endif //__cplusplus
 
 
 #include <time.h>
@@ -13,11 +19,12 @@ extern "C" {
 
 #define	TESTMODE	1
 
-//----------------------
+//---------------------------------------------------------
+/*		Structures adn typedefs		*/
+//---------------------------
+
 
 typedef BYTE*	ALPH;
-
-//----------------------
 
 
 #pragma pack(push, 1)
@@ -28,20 +35,6 @@ typedef struct _keys_
 	BYTE third;
 } STATE, *PSTATE;
 #pragma pack(pop)
-
-//typedef struct _encrypt_
-//{
-//	PSTATE start_state;
-//	ALPH alph;
-//	ALPH rotor_1;
-//	ALPH rotor_2;
-//	ALPH rotor_3;
-//	ALPH reflector;
-//#if TESTMODE
-//	STATE curr_state;
-//#endif
-//
-//} ENCRYPT, *PENCRYPT;
 
 typedef struct _machine_
 {
@@ -66,12 +59,22 @@ typedef struct _cryptosysytem_
 
 }CRYPTOSYSTEM, *PCRYPTOSYSTEM;
 
-//----------------------
+//---------------------------------------------------------
+
+
+//---------------------------------------------------------
+/*		Consts and macroses		*/
+//---------------------------
 
 #define GET_CURR_STATE(CryptoSystem, MachineType, Rotor)	\
 	CryptoSystem->MachineType->curr_state->Rotor
 
-//----------------------
+//---------------------------------------------------------
+
+
+//---------------------------------------------------------
+/*		Declarations functions		*/
+//---------------------------
 
 __declspec(dllexport) void MoveEncryptRotors(PCRYPTOSYSTEM cs);
 __declspec(dllexport) PCRYPTOSYSTEM init_crypto();
@@ -80,8 +83,11 @@ __declspec(dllexport) BYTE Decrypt(PCRYPTOSYSTEM cs, BYTE value);
 __declspec(dllexport) void CsSetStates(PCRYPTOSYSTEM cs, PSTATE startState);
 __declspec(dllexport) void CsSetRotors(PCRYPTOSYSTEM cs, ALPH rotor1, ALPH rotor2, ALPH rotor3);
 
+//---------------------------------------------------------
+
+
 #ifdef	__cplusplus
 }
-#endif
+#endif // __cplusplus
 
 #endif //_ENIGMA_H_

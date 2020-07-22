@@ -1,47 +1,16 @@
+/*-----------------------------------------------------------------------------
+
+	Модуль реализации потокового шифрования для DLL
+
+-----------------------------------------------------------------------------*/
+
+
 #include "Enigma.h"
 
-//void generic_keys() {
-//	srand(time(NULL));
-//
-//	BYTE alf_for_keys[] =
-//	{
-//		0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
-//	};
-//
-//	cs.keys.first = alf_for_keys[0] + rand() % alf_for_keys[15];
-//	cs.keys.second = alf_for_keys[0] + rand() % alf_for_keys[15];
-//	if (cs.keys.first == cs.keys.second)
-//		cs.keys.second = alf_for_keys[0] + rand() % alf_for_keys[15];
-//
-//	cs.keys.third = alf_for_keys[0] + rand() % alf_for_keys[15];
-//	if (cs.keys.third == cs.keys.second || cs.keys.third == cs.keys.first)
-//		cs.keys.third = alf_for_keys[0] + rand() % alf_for_keys[15];
-//
-//}
 
-
-//
-//
-//static void generic_keys()
-//{
-//	srand(time(NULL));
-//
-//	BYTE alf_for_keys[] =
-//	{
-//		0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
-//	};
-//
-//	cs.keys.first = alf_for_keys[0] + rand() % alf_for_keys[15];
-//	cs.keys.second = alf_for_keys[0] + rand() % alf_for_keys[15];
-//	if(cs.keys.first == cs.keys.second)
-//		cs.keys.second = alf_for_keys[0] + rand() % alf_for_keys[15];
-//
-//	cs.keys.third = alf_for_keys[0] + rand() % alf_for_keys[15];
-//	if (cs.keys.third == cs.keys.second || cs.keys.third == cs.keys.first)
-//		cs.keys.third = alf_for_keys[0] + rand() % alf_for_keys[15];
-//}
-
-
+//---------------------------------------------------------
+/*		Definitions functions		*/
+//---------------------------
 
 static BYTE mod16(BYTE value) {
 	return ((value % 16) + 16) % 16;
@@ -311,3 +280,5 @@ BYTE Decrypt(PCRYPTOSYSTEM cs, BYTE value) {
 
 	return res;
 }
+
+//---------------------------------------------------------

@@ -1,5 +1,16 @@
+/*-----------------------------------------------------------------------------
+	
+	Реализация внутренней архитектуры виртуальной машины
+
+-----------------------------------------------------------------------------*/
+
+
 #include "vm.h"
 
+
+//---------------------------------------------------------
+/*		Global variables		*/
+//---------------------------
 
 BYTE startOpcodes[COUNT_START_OPCODES] = { 0xbe, 0xac, 0x05, 0x4c, 0xb0 };
 
@@ -54,16 +65,13 @@ BYTE staticOpTypes[16][4] = { {0x02, 0x0c, 0x03, 0x00, },
 							{0x03, 0x05, 0x09, 0x00, },
 							{0x08, 0x0d, 0x06, 0x0c, }, };
 
+//---------------------------------------------------------
 
-void _generate_opcode_table_()
-{
-	//opcode_table = (uint32_t**)malloc(sizeof(uint32_t*) * INTSR_COUNT);
-	//for (int i = 0; i < INTSR_COUNT; ++i)
-	//	opcode_table[i] = (BYTE*)malloc(sizeof(BYTE) * 12);
 
-//	table = OPODE_TABLE;
-	
-}
+//---------------------------------------------------------
+/*		Definitions functions		*/
+//---------------------------
+
 
 BYTE FindInOpcodeTable(BYTE opcode, BYTE index) {
 	for (BYTE i = 0; i < COUNT_INSTRUCTIONS; ++i) {
@@ -81,7 +89,7 @@ BYTE FindInOpTypeTable(BYTE operandByte, BYTE index) {
 	return 0;
 }
 
-void _push_(vm_ptr vm, DWORD value)
+void _push_(VM_PTR vm, DWORD value)
 {
 	DWORD curr_addr = vm->REG[SP] + vm->SS;
 	if (curr_addr > vm->SS + SIZE_SS) {
@@ -91,7 +99,7 @@ void _push_(vm_ptr vm, DWORD value)
 	vm->REG[SP] += 0x00000004;
 }
 
-void _pop_(vm_ptr vm, DWORD* dst)
+void _pop_(VM_PTR vm, DWORD* dst)
 {
 	vm->REG[SP] -= 0x00000004;
 	DWORD curr_addr = vm->REG[SP] + vm->SS;
@@ -104,7 +112,7 @@ void _pop_(vm_ptr vm, DWORD* dst)
 	}
 }
 
-uint32_t define_operand(vm_ptr vm, enum _types_ type, DWORD ex_type)
+uint32_t define_operand(VM_PTR vm, enum _types_ type, DWORD ex_type)
 {
 	// _push_(vm, (DWORD)(((DWORD)type << 8) + num_reg));
 	switch (type) 
@@ -192,12 +200,12 @@ uint32_t define_operand(vm_ptr vm, enum _types_ type, DWORD ex_type)
 	return vm->REG[r9];
 }
 
-DWORD _get_secret_op_value_(vm_ptr vm, WORD value, DWORD* dst)
+DWORD _get_secret_op_value_(VM_PTR vm, WORD value, DWORD* dst)
 {
 	return *dst = *((DWORD*)((BYTE*)(vm->DS + SIZE_DS + value)));
 }
 
-void _vm_init_(vm_ptr vm)
+void _vm_init_(VM_PTR vm)
 {
 	//DWORD size = 1 << (FLAG_SIZE_SS + 7);
 	vm->DS = (BYTE*)malloc(SIZE_DS + (sizeof(DWORD) * 2));
@@ -215,18 +223,18 @@ void _vm_init_(vm_ptr vm)
 
 
 
-DWORD _vm_destruct_(vm_ptr vm)
+DWORD _vm_destruct_(VM_PTR vm)
 {
 	//free(vm->CS);
 	free(vm->DS);
 	free(vm->SS);
-	//DWORD end_value = vm->REG[R1];
+	DWORD end_value = vm->REG[R1];
 	
 	for (int i = 0; i < r9; ++i)
 		vm->REG[i] = 0;
-	FreeCs(vm->cs);
+	//FreeCs(vm->cs);
 	free(vm);
-	return 0;
+	return end_value;
 }
 
 static DWORD DecodeValue(OP* operand) {
@@ -241,7 +249,7 @@ static DWORD DecodeValue(OP* operand) {
 	return value;
 }
 
-static DWORD GetValue(vm_ptr vm, OP* op){
+static DWORD GetValue(VM_PTR vm, OP* op){
 	DWORD value = 0;
 	
 	switch (op->type >> 4)
@@ -253,7 +261,7 @@ static DWORD GetValue(vm_ptr vm, OP* op){
 		break;
 
 	case regaddr_:
-		value = *(DWORD*)((BYTE*)(vm->DS + vm->REG[op->type & 0x0f]));
+		value = *((DWORD*)((BYTE*)(vm->DS + vm->REG[op->type & 0x0f])));
 		break;
 
 	case const_:
@@ -274,7 +282,7 @@ static DWORD GetValue(vm_ptr vm, OP* op){
 	return value;
 }
 
- static void SetValue(vm_ptr vm, OP* op, DWORD value){
+ static void SetValue(VM_PTR vm, OP* op, DWORD value){
  	switch (op->type >> 4)
  	{
  	case constaddr_:
@@ -286,7 +294,7 @@ static DWORD GetValue(vm_ptr vm, OP* op){
  		return;
 
  	case regaddr_:
- 		*(DWORD*)((BYTE*)(vm->DS + vm->REG[op->type & 0x0f])) = value;
+ 		*((DWORD*)((BYTE*)(vm->DS + vm->REG[op->type & 0x0f]))) = value;
  		break;
 
  	case reg_:
@@ -298,7 +306,7 @@ static DWORD GetValue(vm_ptr vm, OP* op){
  	}
  }
 
-void _vm_mov_(vm_ptr vm, OP* op1, OP* op2)
+void _vm_mov_(VM_PTR vm, OP* op1, OP* op2)
 {
 	DWORD tmp;
 
@@ -307,7 +315,7 @@ void _vm_mov_(vm_ptr vm, OP* op1, OP* op2)
 
 }
 
-void _vm_add_(vm_ptr vm, OP * op1, OP * op2)
+void _vm_add_(VM_PTR vm, OP * op1, OP * op2)
 {
 	DWORD val1, val2;
 	val1 = GetValue(vm, op1);
@@ -318,7 +326,7 @@ void _vm_add_(vm_ptr vm, OP * op1, OP * op2)
 
 }
 
-void _vm_sub_(vm_ptr vm, OP * op1, OP * op2)
+void _vm_sub_(VM_PTR vm, OP * op1, OP * op2)
 {
 	DWORD val1, val2;
 	val1 = GetValue(vm, op1);
@@ -328,7 +336,7 @@ void _vm_sub_(vm_ptr vm, OP * op1, OP * op2)
 	SetValue(vm, op1, val1);
 }
 
-void _vm_xor_(vm_ptr vm, OP * op1, OP * op2)
+void _vm_xor_(VM_PTR vm, OP * op1, OP * op2)
 {
 	DWORD val1, val2;
 	val1 = GetValue(vm, op1);
@@ -338,7 +346,7 @@ void _vm_xor_(vm_ptr vm, OP * op1, OP * op2)
 	SetValue(vm, op1, val1);
 }
 
-void _vm_and_(vm_ptr vm, OP * op1, OP * op2)
+void _vm_and_(VM_PTR vm, OP * op1, OP * op2)
 {
 	DWORD val1, val2;
 	val1 = GetValue(vm, op1);
@@ -348,7 +356,7 @@ void _vm_and_(vm_ptr vm, OP * op1, OP * op2)
 	SetValue(vm, op1, val1);
 }
 
-void _vm_or_(vm_ptr vm, OP * op1, OP * op2)
+void _vm_or_(VM_PTR vm, OP * op1, OP * op2)
 {
 	DWORD val1, val2;
 	val1 = GetValue(vm, op1);
@@ -358,23 +366,23 @@ void _vm_or_(vm_ptr vm, OP * op1, OP * op2)
 	SetValue(vm, op1, val1);
 }
 
-void _vm_push_(vm_ptr vm, OP * op1, OP * op2) {
+void _vm_push_(VM_PTR vm, OP * op1, OP * op2) {
 	DWORD tmp = 0;
 	tmp = GetValue(vm, op1);
 	_push_(vm, tmp);
 }
 
-void _vm_pop_(vm_ptr vm, OP* op1, OP* op2) {
+void _vm_pop_(VM_PTR vm, OP* op1, OP* op2) {
 	DWORD tmp = 0;
 	_pop_(vm, &tmp);
 	SetValue(vm, op1, tmp);
 }
 
-void _vm_call_(vm_ptr vm, DWORD addr) {
+void _vm_call_(VM_PTR vm, DWORD addr) {
 	return;
 }
 
-void _vm_mul_(vm_ptr vm, OP* op1, OP* op2){
+void _vm_mul_(VM_PTR vm, OP* op1, OP* op2){
 	DWORD val1, val2;
 	val1 = GetValue(vm, op1);
 	val2 = GetValue(vm, op2);
@@ -384,7 +392,7 @@ void _vm_mul_(vm_ptr vm, OP* op1, OP* op2){
 	return;
 }
 
-void _vm_div_(vm_ptr vm, OP* op1, OP* op2){
+void _vm_div_(VM_PTR vm, OP* op1, OP* op2){
 	DWORD val1, val2;
 	val1 = GetValue(vm, op1);
 	val2 = GetValue(vm, op2);
@@ -394,7 +402,7 @@ void _vm_div_(vm_ptr vm, OP* op1, OP* op2){
 	return;
 }
 
-void _vm_init_cs_(vm_ptr vm, BYTE op1, BYTE op2, BYTE op3)
+void _vm_init_cs_(VM_PTR vm, BYTE op1, BYTE op2, BYTE op3)
 {
 	BYTE startState, index;
 	PSTATE State = (PSTATE)malloc(sizeof(STATE));
@@ -408,3 +416,279 @@ void _vm_init_cs_(vm_ptr vm, BYTE op1, BYTE op2, BYTE op3)
 	CsSetRotors(vm->cs, valuesForRotors[op1 & 0x0f], valuesForRotors[op2 & 0x0f], valuesForRotors[op3 & 0x0f]);
 	
 }
+
+
+//---------------------------
+//
+//	Instruction parse and handle functions	
+//
+
+
+static void DecryptInstruction(VM_PTR vm, BYTE opcode, BYTE* retOpcode) {
+
+	if (READ_EIF == 1) { // if enigma code
+		/*if(READ_CEF == 0)
+			trueOpcode = Decrypt(vm->cs, opcode >> 4);
+		else if (READ_CEF == 1 && vm->CS[IP] == 0) {
+			trueOpcode = Decrypt(vm->cs, opcode >> 4);
+		}
+		else*/
+		retOpcode = Decrypt(vm->cs, opcode >> 4);
+	}
+	else { // if static code
+		retOpcode = FindInOpcodeTable(opcode, (BYTE)vm->REG[r10]);
+	}
+
+	return;//Decrypt(opcode);
+}
+
+static BOOL CheckInitInstruction(BYTE opcode) {
+	for (int i = 0; i < COUNT_START_OPCODES; ++i)
+		if (startOpcodes[i] == opcode)
+			return TRUE;
+
+	return FALSE;
+}
+
+static instrFunc ParseInstructionOpcode(VM_PTR vm, BYTE opcode, BYTE* opCount) {
+	if (CheckInitInstruction(opcode)) {
+		*opCount = 3;
+		return (instrFunc)_vm_init_cs_;
+	}
+	BYTE trueOpcode;
+	DecryptInstruction(vm, opcode, &trueOpcode);
+	switch (trueOpcode) {
+	case 0x01:
+		*opCount = 2;
+		return (instrFunc)_vm_mov_;
+	case 0x02:
+		*opCount = 2;
+		return (instrFunc)_vm_and_;
+	case 0x03:
+		*opCount = 2;
+		return (instrFunc)_vm_or_;
+	case 0x04:
+		*opCount = 1;
+		return (instrFunc)_vm_call_;
+	case 0x05:
+		*opCount = 2;
+		return (instrFunc)_vm_add_;
+	case 0x06:
+		*opCount = 2;
+		return (instrFunc)_vm_sub_;
+	case 0x07:
+		*opCount = 2;
+		return (instrFunc)_vm_xor_;
+	case 0x08:
+		*opCount = 2;
+		return (instrFunc)_vm_mul_;
+	case 0x09:
+		*opCount = 2;
+		return (instrFunc)_vm_div_;
+	case 0x0a:
+		*opCount = 1;
+		return (instrFunc)_vm_push_;
+	case 0x0b:
+		*opCount = 1;
+		return (instrFunc)_vm_pop_;
+
+	default:
+		return NULL;
+	}
+}
+
+static BYTE ParseOperandOpcode(VM_PTR vm, BYTE operandByte) {
+	//DecryptOperand
+	BYTE trueType;
+	DWORD ex_type;
+	BYTE retValue = 0;
+
+	if (READ_EIF == 1) {
+		trueType = Decrypt(vm->cs, operandByte >> 4);
+	}
+	else {
+		trueType = FindInOpTypeTable(operandByte >> 4, vm->REG[r10]);
+	}
+
+	switch ((enum _types_)trueType)
+	{
+	case reg_:
+	case regaddr_:
+		define_operand(vm, trueType, operandByte & 0x0f);
+		retValue = 1;
+		break;
+	case constaddr_:
+		ex_type = 0;
+		_pop_(vm, &ex_type);
+		define_operand(vm, trueType, ex_type);
+		retValue = 2;
+		break;
+	case const_:
+		ex_type = 0;
+		_pop_(vm, &ex_type);
+		define_operand(vm, trueType, ex_type);
+		retValue = 1;
+		break;
+
+	default:
+		// except
+		return retValue;
+	}
+
+	return retValue;
+}
+
+static void ParsePref(BYTE preffix, VM_PTR vm) {
+	//for (int i = 0; i < COUNT_PREF_CHANGE; ++i) {
+	//	//
+	//}
+	switch (preffix)
+	{
+	case 0x43: // Enigma inint instruction
+		return;
+
+	case 0xe3: // Enigma just instructon
+		WRITE_EIF(1);
+		return;
+
+	case 0xe1: // Enigma just instructon with cycle
+		WRITE_CEF(1);
+		WRITE_EIF(1);
+		return;
+
+	default: // Static table 
+		WRITE_EIF(0);
+		vm->REG[r10] = preffix & 0x0f;
+		break;
+	}
+
+}
+
+
+static void ParseInstruction(PCONTEXT pContext, VM_PTR vm) {
+	BYTE preffixByte, instrByte, op1Byte, op2Byte, op3Byte;
+	BYTE opsCount = 0;
+	instrFunc pInstr;
+
+	//pContext->Cip += 0x02;
+	preffixByte = GET_BYTE_CIP(pContext);
+	if (preffixByte) {
+		// Handle pref
+		ParsePref(preffixByte, vm);
+	}
+	pContext->Cip += 0x01;
+	instrByte = GET_BYTE_CIP(pContext);
+
+	pInstr = ParseInstructionOpcode(vm, instrByte, &opsCount);
+	if (!pInstr) {
+		// error
+		;
+		return;
+	}
+
+	if (pInstr == _vm_init_cs_) {
+		pContext->Cip += 0x01;
+		op1Byte = GET_BYTE_CIP(pContext);
+		pContext->Cip += 0x01;
+		op2Byte = GET_BYTE_CIP(pContext);
+		pContext->Cip += 0x01;
+		op3Byte = GET_BYTE_CIP(pContext);
+		pContext->Cip += 0x01;
+		pInstr(vm, op1Byte, op2Byte, op3Byte);
+	}
+	else {
+		pContext->Cip += 0x01;
+
+		OP* op1 = (OP*)malloc(sizeof(OP));
+		OP* op2 = (OP*)malloc(sizeof(OP));
+		BYTE retParse;
+
+		//switch (opsCount)
+		//{
+		//case 2:
+		//	op2Byte = GET_BYTE_CIP(pContext);
+		//	retParse = ParseOperandOpcode(vm, op2Byte); // return - количетство байт, занимаемых операндом
+		//	if (retParse == 1) {
+		//		pContext->Cip += 0x01;
+		//	}
+		//	else if (retParse == 2) {
+		//		pContext->Cip += 0x02;
+		//	}
+		//	else {
+		//		//error parse;
+		//		;
+		//	}
+		//	_init_operand_(vm, op2);
+		//case 1:
+		//	op1Byte = GET_BYTE_CIP(pContext);
+		//	BYTE retParse = ParseOperandOpcode(vm, op1Byte);
+		//	if (retParse == 1) {
+		//		pContext->Cip += 0x01;
+		//	}
+		//	else if (retParse == 2) {
+		//		pContext->Cip += 0x02;
+		//	}
+		//	else {
+		//		//error parse;
+		//		;
+		//	}
+		//	_init_operand_(vm, op1);
+		//	break;
+		//default:
+		//	break;
+		//}
+
+		op1Byte = GET_BYTE_CIP(pContext);
+		retParse = ParseOperandOpcode(vm, op1Byte);
+		if (retParse == 1) {
+			pContext->Cip += 0x01;
+		}
+		else if (retParse == 2) {
+			pContext->Cip += 0x02;
+		}
+		else {
+			//error parse;
+			;
+		}
+		// если операндов 2
+		if (opsCount == 2) {
+			op2Byte = GET_BYTE_CIP(pContext);
+
+			BYTE retParse = ParseOperandOpcode(vm, op2Byte); // return - количетство байт, занимаемых операндом
+			if (retParse == 1) {
+				pContext->Cip += 0x01;
+			}
+			else if (retParse == 2) {
+				pContext->Cip += 0x02;
+			}
+			else {
+				//error parse;
+				;
+			}
+			_init_ops_(vm, op1, op2);
+		}
+		else {
+			_init_operand_(vm, op1);
+		}
+		pInstr(vm, op1, op2);
+	}
+	WRITE_MOF(0);
+	WRITE_COF(0);
+	WRITE_ROF(0);
+	WRITE_EIF(0);
+	vm->REG[r9] = 0;
+	vm->REG[r10] = 0;
+}
+
+int Handler(EXCEPTION_POINTERS* pException, VM_PTR vm) {
+	if (pException->ExceptionRecord->ExceptionCode == STATUS_ILLEGAL_INSTRUCTION) {
+		pException->ContextRecord->Cip += 0x02; // for ud2
+		ParseInstruction(pException->ContextRecord, vm);
+		return EXCEPTION_CONTINUE_EXECUTION;
+	}
+	else {
+		return EXCEPTION_EXECUTE_HANDLER;
+	}
+}
+
+//---------------------------------------------------------
