@@ -14,6 +14,7 @@
 
 
 #endif //  _WIN64
+
 //typedef void(*instrFunc)(void* pArg);
 //
 //void DecryptInstruction(VM_PTR vm, BYTE opcode, BYTE* retOpcode) {
@@ -302,107 +303,274 @@
 int main() {
 
 	DWORD res = 0;
-
+	ExistInstrInCache(0x11223344);
 	_BEGIN_PROTECT_(_512_BYTE, _256_BYTE)
 	{
 		__try {
 			
-			//__asm _emit 0x66
-			//__asm _emit 0x66
-			//__asm _emit 0x66
-			//__asm _emit 0x66
-			//__asm _emit 0x66
-			//__asm _emit 0x66
-			//__asm _emit 0x66
-			//__asm _emit 0x66
-			//__asm _emit 0x66
-			//__asm _emit 0x66
-			//__asm _emit 0x66
-			//__asm _emit 0x66
-			//__asm _emit 0x66
-			//__asm _emit 0x66
-			//__asm _emit 0x66
-			//__asm _emit 0x66
+			__asm _emit 0xf2
+			__asm _emit 0x65
+			__asm _emit 0x36
+			__asm _emit 0x3e
+			__asm _emit 0xf3
+			__asm _emit 0x64
+			__asm _emit 0x0f
+			__asm _emit 0x26
+			__asm _emit 0xf0
+			__asm _emit 0x66
+			__asm _emit 0x2e
+			__asm _emit 0x67
+			__asm _emit 0x9b
+			__asm _emit 0x67
+			__asm _emit 0x66
+			__asm _emit 0xf0
 
-
-
-			__asm ud2
 			__asm _emit 0x43
 			__asm _emit 0x05
-			__asm _emit 0x8f
-			__asm _emit 0xe3
-			__asm _emit 0x2b
+			__asm _emit 0xe7
+			__asm _emit 0xba
+			__asm _emit 0x39
 			{
 
 				_If(1)
 					_push_(vm, 0);
-					__asm ud2
-					__asm _emit 0x48
-					__asm _emit 0x61
-					__asm _emit 0xd2
-					__asm _emit 0xee
+				__asm _emit 0xf2
+				__asm _emit 0x26
+				__asm _emit 0xf3
+				__asm _emit 0x2e
+				__asm _emit 0x66
+				__asm _emit 0x0f
+				__asm _emit 0x67
+				__asm _emit 0xf2
+				__asm _emit 0x65
+				__asm _emit 0x64
+				__asm _emit 0xf0
+				__asm _emit 0x3e
+				__asm _emit 0x36
+				__asm _emit 0x65
+				__asm _emit 0x64
+				__asm _emit 0xf0
+
+				__asm _emit 0x44
+				__asm _emit 0xcd
+				__asm _emit 0x12
+				__asm _emit 0x30
+
 				_endif
 
-				_For(int i = 0; i < 5; ++i)
+					_For(int i = 0; i < 5; ++i)
 					_push_(vm, 6);
-					__asm ud2
-					__asm _emit 0x40
-					__asm _emit 0xf0
-					__asm _emit 0x22
-					__asm _emit 0x37
-					_push_(vm, 1);
-					__asm ud2
-					__asm _emit 0x49
-					__asm _emit 0x8f
-					__asm _emit 0x52
-					__asm _emit 0xa5
-				_endfor
+				__asm _emit 0x64
+				__asm _emit 0x3e
+				__asm _emit 0x26
+				__asm _emit 0x67
+				__asm _emit 0xf0
+				__asm _emit 0x36
+				__asm _emit 0x66
+				__asm _emit 0x2e
+				__asm _emit 0xf3
+				__asm _emit 0x0f
+				__asm _emit 0x65
+				__asm _emit 0xf2
+				__asm _emit 0x9b
+				__asm _emit 0xf3
+				__asm _emit 0x0f
+				__asm _emit 0x65
 
-					__asm ud2
+				__asm _emit 0x4d
+				__asm _emit 0xa0
+				__asm _emit 0x32
+				__asm _emit 0x97
+
+				_push_(vm, 1);
+				__asm _emit 0xf0
+				__asm _emit 0x65
+				__asm _emit 0xf2
+				__asm _emit 0x66
+				__asm _emit 0x67
+				__asm _emit 0x2e
+				__asm _emit 0x3e
+				__asm _emit 0x0f
+				__asm _emit 0x9b
+				__asm _emit 0x64
+				__asm _emit 0x26
+				__asm _emit 0xf3
+				__asm _emit 0x36
+				__asm _emit 0x36
+				__asm _emit 0x26
+				__asm _emit 0x64
+
+				__asm _emit 0x4c
+				__asm _emit 0xe5
+				__asm _emit 0x42
+				__asm _emit 0x1d
+
+				_endfor
+					__asm _emit 0xf0
+				__asm _emit 0xf3
+				__asm _emit 0x3e
+				__asm _emit 0x67
+				__asm _emit 0x36
+				__asm _emit 0x9b
+				__asm _emit 0x64
+				__asm _emit 0x66
+				__asm _emit 0x2e
+				__asm _emit 0x26
+				__asm _emit 0x0f
+				__asm _emit 0xf2
+				__asm _emit 0x65
+				__asm _emit 0x0f
+				__asm _emit 0x2e
+				__asm _emit 0xf2
+
 				__asm _emit 0xe3
-				__asm _emit 0x79
+				__asm _emit 0xea
 				__asm _emit 0x41
-				__asm _emit 0x92
-				__asm ud2
-				__asm _emit 0xe3
-				__asm _emit 0xfc
-				__asm _emit 0x31
 				__asm _emit 0xe2
+
+				__asm _emit 0x0f
+				__asm _emit 0xf0
+				__asm _emit 0xf2
+				__asm _emit 0x66
+				__asm _emit 0x64
+				__asm _emit 0x3e
+				__asm _emit 0x36
+				__asm _emit 0x67
+				__asm _emit 0x9b
+				__asm _emit 0x26
+				__asm _emit 0x2e
+				__asm _emit 0x65
+				__asm _emit 0xf3
+				__asm _emit 0x9b
+				__asm _emit 0x65
+				__asm _emit 0x26
+
+				__asm _emit 0xe3
+				__asm _emit 0x2f
+				__asm _emit 0xa1
+				__asm _emit 0xb2
+
 				_push_(vm, 0x00000008);
 				_push_(vm, 0x00000006);
-				__asm ud2
+				__asm _emit 0x36
+				__asm _emit 0x0f
+				__asm _emit 0x26
+				__asm _emit 0xf2
+				__asm _emit 0x67
+				__asm _emit 0xf0
+				__asm _emit 0x9b
+				__asm _emit 0x66
+				__asm _emit 0x65
+				__asm _emit 0x2e
+				__asm _emit 0x3e
+				__asm _emit 0xf3
+				__asm _emit 0x64
+				__asm _emit 0x65
+				__asm _emit 0xf3
+				__asm _emit 0x64
+
 				__asm _emit 0xe3
-				__asm _emit 0x86
-				__asm _emit 0x7f
+				__asm _emit 0xa0
+				__asm _emit 0x84
 				__asm _emit 0x04
-				__asm _emit 0x09
+				__asm _emit 0x1d
+
 				_push_(vm, 1);
-				__asm ud2
+				__asm _emit 0x0f
+				__asm _emit 0xf0
+				__asm _emit 0xf2
+				__asm _emit 0x65
+				__asm _emit 0x9b
+				__asm _emit 0xf3
+				__asm _emit 0x67
+				__asm _emit 0x66
+				__asm _emit 0x26
+				__asm _emit 0x64
+				__asm _emit 0x3e
+				__asm _emit 0x2e
+				__asm _emit 0x36
+				__asm _emit 0x3e
+				__asm _emit 0x2e
+				__asm _emit 0x64
+
 				__asm _emit 0xe3
-				__asm _emit 0xc7
-				__asm _emit 0xe6
-				__asm _emit 0x2b
+				__asm _emit 0x39
+				__asm _emit 0xc6
+				__asm _emit 0xba
+
 				_push_(vm, 0x00000007);
-				__asm ud2
+				__asm _emit 0x36
+				__asm _emit 0xf3
+				__asm _emit 0x26
+				__asm _emit 0x3e
+				__asm _emit 0x66
+				__asm _emit 0x64
+				__asm _emit 0x9b
+				__asm _emit 0x0f
+				__asm _emit 0x2e
+				__asm _emit 0xf0
+				__asm _emit 0x65
+				__asm _emit 0xf2
+				__asm _emit 0x67
+				__asm _emit 0x2e
+				__asm _emit 0xf2
+				__asm _emit 0xf0
+
 				__asm _emit 0xe3
-				__asm _emit 0x29
-				__asm _emit 0x96
-				__asm _emit 0x27
-				__asm ud2
-				__asm _emit 0xe3
+				__asm _emit 0x85
+				__asm _emit 0xd6
 				__asm _emit 0x8c
-				__asm _emit 0x51
-				__asm _emit 0x76
-				__asm ud2
+
+				__asm _emit 0x3e
+				__asm _emit 0x26
+				__asm _emit 0x67
+				__asm _emit 0x36
+				__asm _emit 0x0f
+				__asm _emit 0x2e
+				__asm _emit 0x64
+				__asm _emit 0xf0
+				__asm _emit 0xf2
+				__asm _emit 0x66
+				__asm _emit 0x9b
+				__asm _emit 0xf3
+				__asm _emit 0x65
+				__asm _emit 0x65
+				__asm _emit 0xf2
+				__asm _emit 0x9b
+
 				__asm _emit 0xe3
-				__asm _emit 0x22
-				__asm _emit 0xe2
-				__asm _emit 0x91
+				__asm _emit 0x6c
+				__asm _emit 0xa1
+				__asm _emit 0xb6
+
+				__asm _emit 0xf0
+				__asm _emit 0x64
+				__asm _emit 0x9b
+				__asm _emit 0x36
+				__asm _emit 0x66
+				__asm _emit 0x65
+				__asm _emit 0xf3
+				__asm _emit 0x0f
+				__asm _emit 0x2e
+				__asm _emit 0x67
+				__asm _emit 0x3e
+				__asm _emit 0x26
+				__asm _emit 0xf2
+				__asm _emit 0xf2
+				__asm _emit 0x67
+				__asm _emit 0x3e
+
+				__asm _emit 0xe3
+				__asm _emit 0xf9
+				__asm _emit 0xd2
+				__asm _emit 0xb1
+
 			}
 		}
 		__except (Handler(GetExceptionInformation(), vm)) {
 			
 			//res = _vm_destruct_(vm);
+			printf("here\n");
 		}
 		res = _vm_destruct_(vm);
 	}
@@ -440,7 +608,6 @@ int main() {
 	//		VM_ADD r1, 5
 	//		VM_MUL r1, 2
 	//	_endfor
-	//	
 	//	VM_MOV r0, r1;
 	//	VM_MOV [r0], r1
 	//	VM_MOV [0x00000004], 0xb
@@ -448,13 +615,13 @@ int main() {
 	//	VM_ADD r5, 2
 	//	VM_ADD r5, 0x04
 	//	VM_OR [r0], [r5]
-	//	VM_MOV r1, [r0]
+	//	VM_MOV r1, r0
 	//	//VM_OR r0, 0x10
 	//	//VM_MOV r1, r0
 	//}
 	//END_PROTECT(res);
 
-	//printf_s("%d\n", res);
+	printf("%d\n", res);
 	system("pause");
 	return 0;
 }

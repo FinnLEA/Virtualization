@@ -5,7 +5,7 @@
 -----------------------------------------------------------------------------*/
 
 
-#include "vm.h"
+#include "include\vm.h"
 
 
 //---------------------------------------------------------
@@ -212,6 +212,7 @@ void _vm_init_(VM_PTR vm)
 	vm->SS = (uint32_t*)malloc(SIZE_SS);
 	vm->CS = (uint32_t*)malloc(12);
 
+	vm->pInstrForLoop = (PINSTR_LOOP)malloc(sizeof(INSTR_LOOP));
 
 	for (int i = 1; i < COUNT_REGS; ++i)
 		vm->REG[i] = 0;
@@ -219,9 +220,14 @@ void _vm_init_(VM_PTR vm)
 	vm->REG[SP] = 0;
 	vm->REG[IP] = 0;
 	vm->REG[r9] = 0;
+
+	vm->realAddrCurrInstr = 0U;
 }
 
-
+void ClearStructIntsrForLoop(VM_PTR vm) {
+	vm->pInstrForLoop->opcode = 0u;
+	vm->pInstrForLoop->operandsTypes = (WORD)0;
+}
 
 DWORD _vm_destruct_(VM_PTR vm)
 {
@@ -229,6 +235,7 @@ DWORD _vm_destruct_(VM_PTR vm)
 	free(vm->DS);
 	free(vm->SS);
 	DWORD end_value = vm->REG[R1];
+	printf("%d\n", vm->REG[R1]);
 	
 	for (int i = 0; i < r9; ++i)
 		vm->REG[i] = 0;
@@ -420,23 +427,23 @@ void _vm_init_cs_(VM_PTR vm, BYTE op1, BYTE op2, BYTE op3)
 
 //---------------------------
 //
-//	Instruction parse and handle functions	
+//	Instructions parse and handle functions	
 //
-
 
 static void DecryptInstruction(VM_PTR vm, BYTE opcode, BYTE* retOpcode) {
 
-	if (READ_EIF == 1) { // if enigma code
-		/*if(READ_CEF == 0)
-			trueOpcode = Decrypt(vm->cs, opcode >> 4);
-		else if (READ_CEF == 1 && vm->CS[IP] == 0) {
-			trueOpcode = Decrypt(vm->cs, opcode >> 4);
+	if (READ_IEF == 1) { // if enigma code
+		if (READ_LEF == 0)
+			*retOpcode = Decrypt(vm->cs, opcode >> 4);
+		else if (READ_LEF == 1 && ExistInstrInCache(vm->realAddrCurrInstr) == 0) {
+			*retOpcode = Decrypt(vm->cs, opcode >> 4);
+			vm->pInstrForLoop->opcode = *retOpcode;
 		}
-		else*/
-		retOpcode = Decrypt(vm->cs, opcode >> 4);
+		else
+			*retOpcode = GetOpcodeFromCache(vm->realAddrCurrInstr);
 	}
 	else { // if static code
-		retOpcode = FindInOpcodeTable(opcode, (BYTE)vm->REG[r10]);
+		*retOpcode = FindInOpcodeTable(opcode, (BYTE)vm->REG[r10]);
 	}
 
 	return;//Decrypt(opcode);
@@ -497,14 +504,23 @@ static instrFunc ParseInstructionOpcode(VM_PTR vm, BYTE opcode, BYTE* opCount) {
 	}
 }
 
-static BYTE ParseOperandOpcode(VM_PTR vm, BYTE operandByte) {
+static BYTE ParseOperandOpcode(VM_PTR vm, BYTE operandByte, BYTE countOp) {
 	//DecryptOperand
 	BYTE trueType;
 	DWORD ex_type;
 	BYTE retValue = 0;
 
-	if (READ_EIF == 1) {
-		trueType = Decrypt(vm->cs, operandByte >> 4);
+	if (READ_IEF == 1) {
+		if (READ_LEF == 0) {
+			trueType = Decrypt(vm->cs, operandByte >> 4);
+		}
+		else if (READ_LEF == 1 && ExistInstrInCache(vm->realAddrCurrInstr) == FALSE) {
+			trueType = Decrypt(vm->cs, operandByte >> 4);
+			vm->pInstrForLoop->operandsTypes <<= 8;
+			vm->pInstrForLoop->operandsTypes |= (WORD)trueType;
+		}
+		else
+			trueType = GetOperandTypeFromCache(vm->realAddrCurrInstr, countOp);
 	}
 	else {
 		trueType = FindInOpTypeTable(operandByte >> 4, vm->REG[r10]);
@@ -548,16 +564,16 @@ static void ParsePref(BYTE preffix, VM_PTR vm) {
 		return;
 
 	case 0xe3: // Enigma just instructon
-		WRITE_EIF(1);
+		WRITE_IEF(1);
 		return;
 
-	case 0xe1: // Enigma just instructon with cycle
-		WRITE_CEF(1);
-		WRITE_EIF(1);
+	case 0xe1: // Enigma instructon with cycle
+		WRITE_LEF(1);
+		WRITE_IEF(1);
 		return;
 
 	default: // Static table 
-		WRITE_EIF(0);
+		WRITE_IEF(0);
 		vm->REG[r10] = preffix & 0x0f;
 		break;
 	}
@@ -569,7 +585,8 @@ static void ParseInstruction(PCONTEXT pContext, VM_PTR vm) {
 	BYTE preffixByte, instrByte, op1Byte, op2Byte, op3Byte;
 	BYTE opsCount = 0;
 	instrFunc pInstr;
-
+	vm->realAddrCurrInstr = (DWORD)pContext->Cip;
+	ClearStructIntsrForLoop(vm);
 	//pContext->Cip += 0x02;
 	preffixByte = GET_BYTE_CIP(pContext);
 	if (preffixByte) {
@@ -597,6 +614,7 @@ static void ParseInstruction(PCONTEXT pContext, VM_PTR vm) {
 		pInstr(vm, op1Byte, op2Byte, op3Byte);
 	}
 	else {
+		vm->pInstrForLoop->opCount = opsCount;
 		pContext->Cip += 0x01;
 
 		OP* op1 = (OP*)malloc(sizeof(OP));
@@ -639,7 +657,7 @@ static void ParseInstruction(PCONTEXT pContext, VM_PTR vm) {
 		//}
 
 		op1Byte = GET_BYTE_CIP(pContext);
-		retParse = ParseOperandOpcode(vm, op1Byte);
+		retParse = ParseOperandOpcode(vm, op1Byte, 1);
 		if (retParse == 1) {
 			pContext->Cip += 0x01;
 		}
@@ -654,7 +672,7 @@ static void ParseInstruction(PCONTEXT pContext, VM_PTR vm) {
 		if (opsCount == 2) {
 			op2Byte = GET_BYTE_CIP(pContext);
 
-			BYTE retParse = ParseOperandOpcode(vm, op2Byte); // return - количетство байт, занимаемых операндом
+			BYTE retParse = ParseOperandOpcode(vm, op2Byte, 2); // return - количетство байт, занимаемых операндом
 			if (retParse == 1) {
 				pContext->Cip += 0x01;
 			}
@@ -670,19 +688,32 @@ static void ParseInstruction(PCONTEXT pContext, VM_PTR vm) {
 		else {
 			_init_operand_(vm, op1);
 		}
+		if (READ_LEF == 1 && ExistInstrInCache(vm->realAddrCurrInstr) == FALSE)
+			RememberInstructionInCache(vm->realAddrCurrInstr, vm->pInstrForLoop);
 		pInstr(vm, op1, op2);
 	}
 	WRITE_MOF(0);
 	WRITE_COF(0);
 	WRITE_ROF(0);
-	WRITE_EIF(0);
+	WRITE_IEF(0);
+	WRITE_LEF(0);
 	vm->REG[r9] = 0;
 	vm->REG[r10] = 0;
 }
 
+//int count = 0;
+
 int Handler(EXCEPTION_POINTERS* pException, VM_PTR vm) {
-	if (pException->ExceptionRecord->ExceptionCode == STATUS_ILLEGAL_INSTRUCTION) {
-		pException->ContextRecord->Cip += 0x02; // for ud2
+	printf("Exception handler main\n");
+	printf("addr: %p\n", pException->ExceptionRecord->ExceptionAddress);
+	printf("code: %08X\n", pException->ExceptionRecord->ExceptionCode);
+	printf("flags: %08X\n", pException->ExceptionRecord->ExceptionFlags);
+	
+	if (pException->ExceptionRecord->ExceptionCode == STATUS_ILLEGAL_INSTRUCTION ||
+		pException->ExceptionRecord->ExceptionCode == STATUS_PRIVILEGED_INSTRUCTION) {
+		//printf("preff except %x%x", GET_BYTE_CIP(pException->ContextRecord), (BYTE)pException->ContextRecord->Cip + 1);
+		pException->ContextRecord->Cip += 0x10;
+	//	printf(++count);
 		ParseInstruction(pException->ContextRecord, vm);
 		return EXCEPTION_CONTINUE_EXECUTION;
 	}

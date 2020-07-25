@@ -12,6 +12,7 @@
 #include <io.h>
 #include <stdlib.h>
 #include <memory.h>
+#include "..\..\Cache\loopcache.h"
 
 #ifdef _WIN64 // для проверки работоспособности криптосистемы (из DLL)
 #include "../Enigma/Enigma.h"
@@ -65,6 +66,8 @@ typedef struct _VM_
 	uint32_t REG[12];
 
 	PCRYPTOSYSTEM cs;
+	DWORD realAddrCurrInstr;
+	PINSTR_LOOP pInstrForLoop;
 
 } VM, * VM_PTR;
 
@@ -89,15 +92,15 @@ typedef struct _VM_
 #define r10		11
 #define COUNT_REGS r10
 																								
-#define FLAGS	0		/*									  |	CEF | EIF | COF | MOF |	ROF | 	?	  |	size DS |size SS (0_0 - 128 byte, 0_1 - 256 bytes, 1_0 - 512 bytes, 1_1 - 1024 bytes)
+#define FLAGS	0		/*									  |	LEF | IEF | COF | MOF |	ROF | 	?	  |	size DS |size SS (0_0 - 128 byte, 0_1 - 256 bytes, 1_0 - 512 bytes, 1_1 - 1024 bytes)
 							_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ |  _  |  _  |  _  |  _  |  _  | _ _ _ _ | _ _ _ _ | _ _
-																
+
 															- MOF - memory operand flag (11)
 															- COF - const operand flag (12)
 															- ROF - register operand flag (10)
-															- EIF - Execute Instruction Flag (13)
-															- CEF - Cycle Execution Flag (14)
-						*/	
+															- IEF - Execute Instruction Flag (13)
+															- LEF - Loop Execution Flag (14)
+						*/
 
 //---------------------------
 //
@@ -122,13 +125,14 @@ typedef struct _VM_
 #define READ_COF			(FLAG_COF & 0b1)
 #define WRITE_COF(bits)		(vm->REG[FLAGS] = ROL(((FLAG_COF & 0xfffffffe) | bits), 12))
 
-#define FLAG_EIF			(ROR(vm->REG[FLAGS], 13))
-#define READ_EIF			(FLAG_EIF & 0b1)
-#define WRITE_EIF(bits)		(vm->REG[FLAGS] = ROL(((FLAG_EIF & 0xfffffffe) | bits), 13))
+#define FLAG_IEF			(ROR(vm->REG[FLAGS], 13))
+#define READ_IEF			(FLAG_IEF & 0b1)
+#define WRITE_IEF(bits)		(vm->REG[FLAGS] = ROL(((FLAG_IEF & 0xfffffffe) | bits), 13))
 
-#define FLAG_CEF			(ROR(vm->REG[FLAGS], 14))
-#define READ_CEF			(FLAG_EIF & 0b1)
-#define WRITE_CEF(bits)		(vm->REG[FLAGS] = ROL(((FLAG_EIF & 0xfffffffe) | bits), 14))
+#define FLAG_LEF			(ROR(vm->REG[FLAGS], 14))
+#define READ_LEF			(FLAG_LEF & 0b1)
+#define WRITE_LEF(bits)		(vm->REG[FLAGS] = ROL(((FLAG_LEF & 0xfffffffe) | bits), 14))
+
 
 
 //---------------------------

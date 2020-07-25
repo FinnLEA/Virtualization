@@ -48,7 +48,7 @@ opcodes = {
             'MOV'   : 0x01, 
             'AND'   : 0x02,
             'OR'    : 0x03, 
-            'CALL'  : 0x04,
+            'NEG'  : 0x04,
             'ADD'   : 0x05,
             'SUB'   : 0x06,
             'XOR'   : 0x07,
@@ -69,6 +69,7 @@ countOperands = 2
 szDefineOpsFunc = ''
 oldPref = 0
 instructionPref = 0xe3 # standart pref for Enigma code
+[0xe3, 0x5a, 0x7b, 0xff, 0x10, 0x33, 0x39]
 flagStart = False
 
 cs = None
@@ -149,6 +150,39 @@ def CopyState(machine:POINTER(MACHINE)):
 
     return
 
+def InsertStartBytes() -> str:
+    outBuf = ''
+    global beginInstrBytes
+    countFreeBase = 12
+
+    bytesArray = list()
+
+    for val in range(16):                     
+        num_el_array = random.randint(0, countFreeBase)
+        value = beginInstrBytes[num_el_array]
+        
+        #for i in busyOpcodes:
+        #    while value == i:
+        #        num_el_array = random.randint(0, countFreeBase)
+        #        value = beginInstrBytes[num_el_array]
+
+        bytesArray.append(value)
+        tmp = beginInstrBytes[num_el_array]
+        beginInstrBytes[num_el_array] = beginInstrBytes[countFreeBase]
+        beginInstrBytes[countFreeBase] = tmp
+
+        if countFreeBase != 0:
+           countFreeBase -= 1
+        else:
+            countFreeBase = 4
+        outBuf += '__asm _emit 0x'
+        byte = bytesArray[val].to_bytes(1, 'big')
+        
+        outBuf += byte.hex() + '\n'
+    
+    outBuf += '\n'
+
+    return outBuf
 
 def ParseInitVM(Buf:str) -> str:
     global flagStart
@@ -160,7 +194,7 @@ def ParseInitVM(Buf:str) -> str:
 
     outBuf = '_BEGIN_PROTECT_' + '(' + arg1 + ',' + arg2 + ')\n{'
     outBuf += '__try {\n'
-    outBuf += '__asm ud2\n'
+    outBuf += InsertStartBytes()
     outBuf += '__asm _emit 0x43\n'
     
     cs = enigmaModule.init_crypto(None)
@@ -427,15 +461,17 @@ def InsertInstruction(buf:str) -> str:
     #spl = buf.rsplit('VM_', 1)
   #  while i != 0:
     tmp = instruction[0]
-    if tmp[0] == 'VM':
+    if tmp[0] == 'VM' or tmp[0] == 'vm':
         instrName = tmp[1]
-        outBuf += '__asm ud2\n'
+        outBuf += InsertStartBytes()
         outBuf += InsertPref()
         outBuf += InsertOpcode(instrName)
         outBuf += ParseOperands(buf)
         #i -= 1
     
     outBuf = szDefineOpsFunc + outBuf
+
+    outBuf += '\n'
     
     return outBuf
 
@@ -538,8 +574,8 @@ def ParseFile(nameFile):
                 continue
             if tmp.find('BEGIN_PROTECT', 0) != -1:
                 fdBuf += ParseInitVM(tmp)
-            elif tmp.find('VM_', 0) != -1 and flagStart == True:
-                fdBuf += InsertInstruction(tmp)
+            elif (tmp.find('VM_', 0) != -1 or tmp.find('vm_', 0) != -1) and flagStart == True:
+                fdBuf += InsertInstruction(tmp) 
             elif (tmp.find('_While', 0) != -1 or tmp.find('_For', 0) !=-1) and flagStart == True:
                 fdBuf += ParseCycle(tmp)
             elif (tmp.find('STATIC_CODE', 0) != -1 or tmp.find('static_code', 0) != -1) and flagStart == True:
@@ -551,6 +587,8 @@ def ParseFile(nameFile):
             elif tmp.find('_If', 0) != -1  and flagStart == True:
                  fdBuf += ParseIfElse(tmp, 0)
             elif tmp.find('_Elif', 0) != -1 and flagStart == True:
+                fdBuf += ParseIfElse(tmp , 0)
+            elif tmp.find('_Else', 0) != -1 and flagStart == True:
                 fdBuf += ParseIfElse(tmp , 0)
             elif (tmp.find('_endif', 0) != -1 or tmp.find('_ENDIF', 0) != -1) and flagStart == True:
                 fdBuf += ParseIfElse(tmp, 1)
@@ -607,7 +645,8 @@ def GenerateRotorValue():
 def main():
 
     for param in sys.argv:
-        ParseFile(param)
+        if param.find('Preprocessing.py', 0) == -1 :        
+            ParseFile(param)
         
     #cs = enigmaModule.init_crypto(None)
     #CopyState(cs.contents.encrypt)
